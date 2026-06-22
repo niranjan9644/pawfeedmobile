@@ -1,0 +1,29 @@
+{
+  "$schema": "https://capacitorjs.com/schema.json",
+  "appId": "com.pawfeed.app",
+  "appName": "PawFeed",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": false,
+      "backgroundColor": "#A8D8EA",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false,
+      "iosSpinnerStyle": "small",
+      "spinnerColor": "#ffffff"
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_notification",
+      "iconColor": "#A8D8EA",
+      "sound": "beep.wav"
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#ffffff",
+      "overlaysWebView": false
+    }
+  }
+}
