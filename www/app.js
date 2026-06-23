@@ -21910,10 +21910,8 @@ Use emojis and keep under 150 words.`;
 
 // =============================================================================
 // CAPACITOR NATIVE NOTIFICATION BRIDGE
-// Extends the existing showNotification() toast function so that low-stock
-// alerts and feeding reminders also fire as real native local notifications.
-// NOTE: localStorage is kept as-is (Capacitor WebView fully supports it).
-//       For more reliable long-term persistence, migrate to @capacitor/preferences.
+// Extends showNotification(), enableNotifications(), startAllReminders(), 
+// and saveCareTasks() to support native local notifications on Android/iOS.
 // =============================================================================
 (async function initCapacitor() {
   if (!window.Capacitor || !Capacitor.isNativePlatform()) return;
@@ -21939,28 +21937,35 @@ Use emojis and keep under 150 words.`;
   }
   syncStatusBar();
 
-  // Observe theme changes (the existing dark-toggle sets data-theme on <html>)
+  // Observe theme changes
   new MutationObserver(syncStatusBar).observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['data-theme']
   });
 
-  // ── 4. Extend showNotification() with native push ─────────────────────────
-  let _nativeNotifId = 1000; // start above any app-scheduled IDs
+  // ── 4. Native notification handler ────────────────────────────────────────
+  let _nativeNotifId = 2000; // Start high for arbitrary notifications
 
   const _originalShowNotification = window.showNotification || function(){};
   window.showNotification = async function(title, message, type) {
-    // Keep existing in-app toast working exactly as before
-    _originalShowNotification(title, message, type);
+    let finalTitle = title;
+    let finalBody = message;
 
-    // Additionally fire a native local notification
+    // Handle single-argument calls (e.g. showNotification(msg))
+    if (finalBody === undefined) {
+      finalBody = title;
+      finalTitle = '🐾 PawFeed';
+    }
+
+    // Keep existing in-app toast/notification working exactly as before
+    _originalShowNotification(finalBody);
+
     try {
       await LocalNotifications.schedule({
         notifications: [{
           id:    _nativeNotifId++,
-          title: title   || 'PawFeed',
-          body:  message || '',
-          // Schedule immediately (1 second from now)
+          title: finalTitle || 'PawFeed',
+          body:  finalBody  || '',
           schedule: { at: new Date(Date.now() + 1000) },
           sound: null,
           smallIcon: 'ic_notification',
@@ -21971,31 +21976,177 @@ Use emojis and keep under 150 words.`;
     }
   };
 
-  // ── 5. Native feeding reminder scheduler ──────────────────────────────────
-  // The existing app uses setInterval-based reminderTimers[]. This bridge also
-  // registers a LocalNotifications.schedule() call whenever a feeding reminder
-  // is set, so it fires even when the app is backgrounded.
-  window._scheduleNativeFeedingReminder = async function(petName, feedTime, notifId) {
+  // ── 5. Override enableNotifications ───────────────────────────────────────
+  window.enableNotifications = async function() {
     try {
-      const [h, m] = (feedTime || '').split(':').map(Number);
-      if (isNaN(h) || isNaN(m)) return;
-      const at = new Date();
-      at.setHours(h, m, 0, 0);
-      if (at <= new Date()) at.setDate(at.getDate() + 1); // schedule for tomorrow if past
-      await LocalNotifications.schedule({
-        notifications: [{
-          id:    notifId || (_nativeNotifId++),
-          title: '🐾 Feeding Time!',
-          body:  `Time to feed ${petName}!`,
-          schedule: { at, repeats: true },
-          sound: null,
-          smallIcon: 'ic_notification',
-        }]
-      });
-      console.log(`[PawFeed] Native feeding reminder set for ${petName} at ${feedTime}`);
+      const perm = await LocalNotifications.requestPermissions();
+      if (perm.display === 'granted') {
+        showToast('Notifications enabled ✅');
+        startAllReminders();
+      } else {
+        showToast('Permission denied');
+      }
     } catch (e) {
-      console.warn('[PawFeed] Native feeding reminder failed:', e);
+      showToast('Notifications not supported');
+      console.error('[PawFeed] Native enableNotifications failed:', e);
     }
   };
+
+  // ── 6. Native feeding reminder scheduler ──────────────────────────────────
+  const _originalStartAllReminders = window.startAllReminders || function(){};
+  window.startAllReminders = async function() {
+    _originalStartAllReminders();
+
+    try {
+      const pets = typeof getPets === 'function' ? getPets() : [];
+      if (!pets || !pets.length) return;
+
+      // Cancel all existing scheduled feeding reminders first (IDs 1-999)
+      const pending = await LocalNotifications.getPending();
+      if (pending && pending.notifications) {
+        const toCancel = pending.notifications
+          .filter(n => n.id >= 1 && n.id < 1000)
+          .map(n => ({ id: n.id }));
+        if (toCancel.length > 0) {
+          await LocalNotifications.cancel({ notifications: toCancel });
+        }
+      }
+
+      const nativeNotifications = [];
+      let notifId = 1;
+
+      pets.forEach(pet => {
+        const times = [
+          { hour: 7, minute: 0, title: 'Morning Meal 🌅', body: `Time to feed ${pet.name} their morning meal!` },
+          { hour: 13, minute: 0, title: 'Afternoon Check ☀️', body: `Time to check on ${pet.name}!` },
+          { hour: 19, minute: 30, title: 'Dinner Time 🌙', body: `Time to feed ${pet.name} their dinner!` }
+        ];
+
+        times.forEach(t => {
+          nativeNotifications.push({
+            id: notifId++,
+            title: `🐾 ${t.title}`,
+            body: t.body,
+            schedule: {
+              on: { hour: t.hour, minute: t.minute },
+              repeats: true
+            },
+            sound: null,
+            smallIcon: 'ic_notification',
+          });
+        });
+      });
+
+      if (nativeNotifications.length > 0) {
+        await LocalNotifications.schedule({
+          notifications: nativeNotifications
+        });
+        console.log(`[PawFeed] Scheduled ${nativeNotifications.length} native feeding reminders`);
+      }
+    } catch (e) {
+      console.warn('[PawFeed] Failed to schedule native reminders:', e);
+    }
+  };
+
+  const _originalToggleReminderSetting = window.toggleReminderSetting || function(){};
+  window.toggleReminderSetting = async function() {
+    _originalToggleReminderSetting();
+
+    try {
+      const toggle = document.getElementById('reminderToggle');
+      const isEnabled = toggle && toggle.classList.contains('on');
+      if (!isEnabled) {
+        // Cancel all pending native feeding reminders (IDs 1-999)
+        const pending = await LocalNotifications.getPending();
+        if (pending && pending.notifications) {
+          const toCancel = pending.notifications
+            .filter(n => n.id >= 1 && n.id < 1000)
+            .map(n => ({ id: n.id }));
+          if (toCancel.length > 0) {
+            await LocalNotifications.cancel({ notifications: toCancel });
+          }
+        }
+        console.log('[PawFeed] Cancelled all native feeding reminders');
+      }
+    } catch (e) {
+      console.warn('[PawFeed] Failed to toggle native reminders:', e);
+    }
+  };
+
+  // ── 7. Custom Care Task Reminders ──────────────────────────────────────────
+  window._syncNativeTaskReminders = async function(tasks) {
+    if (!tasks) return;
+    try {
+      const pending = await LocalNotifications.getPending();
+      
+      const stringToHash = (str) => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+          hash = (hash << 5) - hash + str.charCodeAt(i);
+          hash |= 0;
+        }
+        return Math.abs(hash) % 1000000 + 10000; // range 10000 - 1010000
+      };
+
+      const currentTaskIds = [];
+      const nowMs = Date.now();
+      const notificationsToSchedule = [];
+
+      tasks.forEach(t => {
+        if (t.reminder && !t.completed && t.dateTime) {
+          const taskTime = new Date(t.dateTime).getTime();
+          if (taskTime > nowMs) {
+            const notifId = stringToHash(t.id);
+            currentTaskIds.push(notifId);
+
+            notificationsToSchedule.push({
+              id: notifId,
+              title: '📋 Care Task Reminder',
+              body: t.title,
+              schedule: { at: new Date(taskTime) },
+              sound: null,
+              smallIcon: 'ic_notification',
+            });
+          }
+        }
+      });
+
+      // Cancel pending task notifications that are no longer active/needed
+      if (pending && pending.notifications) {
+        const toCancel = pending.notifications
+          .filter(n => n.id >= 10000 && !currentTaskIds.includes(n.id))
+          .map(n => ({ id: n.id }));
+        if (toCancel.length > 0) {
+          await LocalNotifications.cancel({ notifications: toCancel });
+        }
+      }
+
+      // Schedule new reminders
+      if (notificationsToSchedule.length > 0) {
+        await LocalNotifications.schedule({
+          notifications: notificationsToSchedule
+        });
+        console.log(`[PawFeed] Scheduled ${notificationsToSchedule.length} native task reminders`);
+      }
+    } catch (e) {
+      console.warn('[PawFeed] Failed to sync task reminders:', e);
+    }
+  };
+
+  const _originalSaveCareTasks = window.saveCareTasks || function(){};
+  window.saveCareTasks = async function(tasks) {
+    await _originalSaveCareTasks(tasks);
+    await window._syncNativeTaskReminders(tasks);
+  };
+
+  // Sync existing task reminders on startup
+  try {
+    const tasks = typeof getCareTasks === 'function' ? getCareTasks() : [];
+    if (tasks && tasks.length > 0) {
+      await window._syncNativeTaskReminders(tasks);
+    }
+  } catch (e) {
+    console.warn('[PawFeed] Startup task reminders sync failed:', e);
+  }
 })();
 
