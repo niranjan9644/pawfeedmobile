@@ -493,9 +493,13 @@
           </div>
           <!-- Day headers -->
           <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:6px">
-            ${['S','M','T','W','T','F','S'].map(d=>`<div
-              style="text-align:center;font-size:11px;font-weight:800;color:var(--muted);padding:4px 0">${d}</div>
-            `).join('')}
+            <div style="text-align:center;font-size:11px;font-weight:800;color:var(--muted);padding:4px 0">S</div>
+            <div style="text-align:center;font-size:11px;font-weight:800;color:var(--muted);padding:4px 0">M</div>
+            <div style="text-align:center;font-size:11px;font-weight:800;color:var(--muted);padding:4px 0">T</div>
+            <div style="text-align:center;font-size:11px;font-weight:800;color:var(--muted);padding:4px 0">W</div>
+            <div style="text-align:center;font-size:11px;font-weight:800;color:var(--muted);padding:4px 0">T</div>
+            <div style="text-align:center;font-size:11px;font-weight:800;color:var(--muted);padding:4px 0">F</div>
+            <div style="text-align:center;font-size:11px;font-weight:800;color:var(--muted);padding:4px 0">S</div>
           </div>
           <!-- Days grid -->
           <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px"></div>
