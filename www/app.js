@@ -19,7 +19,7 @@
     let reminderTimers = [];
     let selectedPlannerDateStr = new Date().toISOString().slice(0, 10);
 
-    const API_BASE_URL = 'http://localhost:5000';
+    const API_BASE_URL = 'https://pawfeedmobile.onrender.com';
     let currentUser = null;
     let pawCache = {
       pets: [],
