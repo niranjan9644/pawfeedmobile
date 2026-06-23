@@ -3019,7 +3019,59 @@
     function checkUnsafeIngredient() { const val = prompt('Enter ingredient to check:'); if (!val) return; const pets = getPets(), pet = pets[getActivePetIdx()] || { type: 'Dog' }; const unsafe = (UNSAFE[pet.type] || []).join(' ').toLowerCase(); const bad = unsafe.includes(val.toLowerCase()); showToast(bad ? 'Unsafe for ' + pet.type + ' ⚠️' : 'Looks safe in small quantity ✅'); }
     function calculateMealAndWater() { const pet = getPets()[getActivePetIdx()] || { weight: 5, age: 2, name: 'Pet' }; const w = parseFloat(pet.weight || 5); document.getElementById('calcResultBox').innerHTML = `<div class="card"><h3 style="font-weight:900;color:var(--dark)">⚖️ Weight-Based Calculator</h3><div class="nutrition-grid"><div class="nutrition-box"><b>${Math.round(w * 28)}g</b><span>Meal</span></div><div class="nutrition-box"><b>${Math.round(w * 55)}ml</b><span>Water</span></div><div class="nutrition-box"><b>${Math.round(w * 70)}</b><span>Calories</span></div><div class="nutrition-box"><b>2-3</b><span>Meals/day</span></div></div></div>`; }
     function startFoodTimer() { let sec = 60; clearInterval(foodTimer); const box = document.getElementById('timerBox'); box.innerHTML = `<div class="card"><h3 style="font-weight:900;color:var(--dark)">⏲️ Food Preparation Timer</h3><div class="timer-circle" id="timerCircle">01:00</div><p class="subtitle" style="text-align:center;margin:0">Voice-guided cooking: prepare, cook, cool, then serve safely.</p></div>`; foodTimer = setInterval(() => { sec--; const c = document.getElementById('timerCircle'); if (c) { c.textContent = '00:' + String(sec).padStart(2, '0'); c.style.setProperty('--timer-progress', ((60 - sec) / 60 * 100) + '%') } if (sec <= 0) { clearInterval(foodTimer); showNotification('Homemade food timer finished. Let the food cool before serving.'); showToast('Timer finished ⏲️') } }, 1000); }
-    function askFoodAssistant() { const q = document.getElementById('foodAIInput').value.trim(); if (!q) return; const pet = getPets()[getActivePetIdx()]; const reply = q.toLowerCase().includes('unsafe') || q.toLowerCase().includes('chocolate') ? 'Avoid chocolate, onion, garlic, grapes, alcohol, caffeine, salt and spicy food. Use plain safe ingredients only.' : q.toLowerCase().includes('substitute') ? 'Safe substitutes: chicken ↔ fish/egg, rice ↔ oats/pumpkin, carrot ↔ beans in small quantity. Introduce slowly.' : `For ${pet?.name || 'your pet'}, choose a balanced homemade meal with safe protein, fiber, vitamins, correct water, and no spices. For medical issues, confirm with a vet.`; document.getElementById('foodAIReply').innerHTML = `<div class="msg bot-msg" style="max-width:100%">${reply}</div>`; document.getElementById('foodAIInput').value = ''; }
+    async function askFoodAssistant() {
+      const input = document.getElementById('foodAIInput');
+      const q = input.value.trim();
+      if (!q) return;
+      
+      input.value = '';
+      const replyBox = document.getElementById('foodAIReply');
+      replyBox.innerHTML = `<div class="msg bot-msg typing-msg" style="max-width:100%">Thinking...</div>`;
+
+      const pets = getPets();
+      const activeIdx = getActivePetIdx();
+      const pet = pets[activeIdx];
+
+      let systemPrompt = `You are PawFeed AI Food Assistant. You specialize in pet food recipes, safe ingredients, ingredient substitutions, meal planning, and nutrition. Give helpful, concise advice. Keep responses under 130 words.`;
+      if (pet) {
+        systemPrompt += ` The user's active pet is ${pet.name}, a ${pet.age}-year-old ${pet.breed} ${pet.type} weighing ${pet.weight}kg. Food preference: ${pet.foodPref}. Health notes: ${pet.health || 'healthy'}. Reference this pet specifically when relevant.`;
+      }
+
+      async function attemptFetch() {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/pawfeed-ai`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ systemPrompt, userMessage: q }),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if (!response.ok) throw new Error(`HTTP status ${response.status}`);
+          return await response.json();
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
+      }
+
+      try {
+        let data = await attemptFetch();
+        const reply = data && data.reply ? data.reply : 'Sorry, I encountered an error. Please try again.';
+        replyBox.innerHTML = `<div class="msg bot-msg" style="max-width:100%">${reply}</div>`;
+      } catch (err) {
+        console.warn('[Food Assistant] First fetch failed, retrying once...', err);
+        try {
+          let data = await attemptFetch();
+          const reply = data && data.reply ? data.reply : 'Sorry, I encountered an error. Please try again.';
+          replyBox.innerHTML = `<div class="msg bot-msg" style="max-width:100%">${reply}</div>`;
+        } catch (retryErr) {
+          console.error('[Food Assistant] Retry failed:', retryErr);
+          replyBox.innerHTML = `<div class="msg bot-msg" style="max-width:100%;background:rgba(255,0,0,0.1);color:#d93025">⚠️ Service unavailable. Please check your internet connection or try again.</div>`;
+        }
+      }
+    }
     function handleFoodPhoto(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { document.getElementById('foodPhotoPreview').innerHTML = `<img src="${reader.result}" class="food-preview-img"><div class="photo-analysis"><b>AI Food Quality Analysis</b><p style="font-size:13px;color:var(--muted);line-height:1.45">Food looks fresh. Check that it has no onion, garlic, salt, masala, chocolate or bones. Serve only after cooling.</p></div>` }; reader.readAsDataURL(file); }
     function saveFoodReaction() { const st = getRecipeStore(); const reaction = document.getElementById('foodReaction').value; st.reactions.unshift({ reaction, ok: reaction.includes('Loved') || reaction.includes('normally'), time: new Date().toISOString() }); saveRecipeStore(st); showToast('Meal reaction saved 😊'); renderRecipeMemory(); }
     function completeMeal(id) {
