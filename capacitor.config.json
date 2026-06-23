@@ -4,6 +4,9 @@
   "appName": "PawFeed",
   "webDir": "www",
   "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "http"
+  },
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 2000,

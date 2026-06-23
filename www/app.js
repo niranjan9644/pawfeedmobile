@@ -18,6 +18,308 @@
 
     let reminderTimers = [];
     let selectedPlannerDateStr = new Date().toISOString().slice(0, 10);
+
+    const API_BASE_URL = 'http://localhost:5000';
+    let currentUser = null;
+    let pawCache = {
+      pets: [],
+      logs: [],
+      stock: [],
+      expenses: [],
+      communityPosts: [],
+      cart: [],
+      scanHistory: [],
+      orders: [],
+      recipes: { favorites: [], saved: [], recent: [], reviews: [], weekly: [], shopping: [], reactions: [] },
+      moodLog: [],
+      meds: [],
+      vetLog: [],
+      sleepLog: [],
+      gallery: {},
+      weightHistory: {},
+      deletedRecipes: [],
+      customRecipes: [],
+      editedRecipes: {},
+      recipeFavorites: [],
+      weeklyPlan: {
+        Mon: { breakfast: null, lunch: null, dinner: null },
+        Tue: { breakfast: null, lunch: null, dinner: null },
+        Wed: { breakfast: null, lunch: null, dinner: null },
+        Thu: { breakfast: null, lunch: null, dinner: null },
+        Fri: { breakfast: null, lunch: null, dinner: null },
+        Sat: { breakfast: null, lunch: null, dinner: null },
+        Sun: { breakfast: null, lunch: null, dinner: null }
+      },
+      dailyChecklist: {},
+      tasks: []
+    };
+
+    async function fetchAllDataFromSupabase() {
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      
+      showToast("Syncing with cloud... ☁️");
+      
+      try {
+        const [
+          petsRes, logsRes, stockRes, expensesRes, postsRes, cartRes, scansRes, tasksRes, ordersRes,
+          moodsRes, medsRes, vetsRes, sleepsRes, galleryRes, weightsRes, recipesRes, profileRes
+        ] = await Promise.all([
+          window.supabaseClient.from('pets').select('*').eq('user_id', userId),
+          window.supabaseClient.from('feeding_logs').select('*').eq('user_id', userId),
+          window.supabaseClient.from('stock_items').select('*').eq('user_id', userId),
+          window.supabaseClient.from('expenses').select('*').eq('user_id', userId),
+          window.supabaseClient.from('community_posts').select('*'),
+          window.supabaseClient.from('cart_items').select('*').eq('user_id', userId),
+          window.supabaseClient.from('scan_history').select('*').eq('user_id', userId),
+          window.supabaseClient.from('care_tasks').select('*').eq('user_id', userId),
+          window.supabaseClient.from('orders').select('*').eq('user_id', userId),
+          window.supabaseClient.from('mood_logs').select('*').eq('user_id', userId),
+          window.supabaseClient.from('meds').select('*').eq('user_id', userId),
+          window.supabaseClient.from('vet_logs').select('*').eq('user_id', userId),
+          window.supabaseClient.from('sleep_logs').select('*').eq('user_id', userId),
+          window.supabaseClient.from('pet_gallery').select('*').eq('user_id', userId),
+          window.supabaseClient.from('weight_history').select('*').eq('user_id', userId),
+          window.supabaseClient.from('custom_recipes').select('*').eq('user_id', userId),
+          window.supabaseClient.from('user_profiles').select('*').eq('id', userId).maybeSingle()
+        ]);
+
+        if (petsRes.data) {
+          pawCache.pets = petsRes.data.map(p => ({
+            id: p.id,
+            name: p.name,
+            type: p.species,
+            breed: p.breed,
+            age: parseFloat(p.age),
+            weight: parseFloat(p.weight),
+            foodPref: p.food_pref,
+            health: p.health,
+            waterGoal: parseFloat(p.water_goal),
+            activityLevel: p.activity_level
+          }));
+        }
+
+        if (logsRes.data) {
+          pawCache.logs = logsRes.data.map(l => {
+            const petIdx = pawCache.pets.findIndex(p => p.id === l.pet_id);
+            return {
+              id: l.id,
+              petIdx: petIdx >= 0 ? petIdx : 0,
+              type: l.type,
+              timestamp: l.timestamp,
+              amount: l.amount,
+              note: l.note
+            };
+          });
+        }
+
+        if (stockRes.data) {
+          pawCache.stockItems = stockRes.data.map(s => ({
+            id: s.id,
+            name: s.name,
+            type: s.type,
+            quantity: parseFloat(s.quantity),
+            unit: s.unit,
+            threshold: parseFloat(s.threshold),
+            decrementAmount: parseFloat(s.decrement_amount)
+          }));
+        }
+
+        if (expensesRes.data) {
+          pawCache.expenses = expensesRes.data.map(e => ({
+            id: e.id,
+            date: e.date,
+            category: e.category,
+            amount: parseFloat(e.amount),
+            desc: e.notes
+          }));
+        }
+
+        if (postsRes.data) {
+          pawCache.communityPosts = postsRes.data.map(p => ({
+            id: p.id,
+            user: p.user_id === userId ? (currentUser.user_metadata?.display_name || 'Me') : 'Pet Parent',
+            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80',
+            content: p.content,
+            image: p.image_url,
+            time: p.created_at,
+            likes: 0,
+            comments: []
+          }));
+        }
+
+        if (cartRes.data) {
+          pawCache.cart = cartRes.data.map(c => ({
+            id: c.id,
+            product_id: c.product_id,
+            quantity: c.quantity
+          }));
+        }
+
+        if (scansRes.data) {
+          pawCache.scanHistory = scansRes.data.map(s => s.result);
+        }
+
+        if (ordersRes.data) {
+          pawCache.orders = ordersRes.data.map(o => ({
+            id: o.id,
+            date: o.date,
+            items: o.items,
+            total: parseFloat(o.total)
+          }));
+        }
+
+        if (moodsRes.data) {
+          pawCache.moodLog = moodsRes.data.map(m => {
+            const petIdx = pawCache.pets.findIndex(p => p.id === m.pet_id);
+            return {
+              petIdx: petIdx >= 0 ? petIdx : 0,
+              date: m.date,
+              label: m.label
+            };
+          });
+        }
+
+        if (medsRes.data) {
+          pawCache.meds = medsRes.data.map(m => ({
+            id: m.id,
+            name: m.name,
+            dosage: m.dosage,
+            frequency: m.frequency,
+            nextDue: m.next_due
+          }));
+        }
+
+        if (vetsRes.data) {
+          pawCache.vetLog = vetsRes.data.map(v => {
+            const petIdx = pawCache.pets.findIndex(p => p.id === v.pet_id);
+            return {
+              id: v.id,
+              petIdx: petIdx >= 0 ? petIdx : 0,
+              date: v.date,
+              clinic: v.clinic,
+              notes: v.notes
+            };
+          });
+        }
+
+        if (sleepsRes.data) {
+          pawCache.sleepLog = sleepsRes.data.map(s => {
+            const petIdx = pawCache.pets.findIndex(p => p.id === s.pet_id);
+            return {
+              petIdx: petIdx >= 0 ? petIdx : 0,
+              date: s.date,
+              hours: parseFloat(s.hours),
+              quality: s.quality
+            };
+          });
+        }
+
+        pawCache.gallery = {};
+        if (galleryRes.data) {
+          galleryRes.data.forEach(g => {
+            const petIdx = pawCache.pets.findIndex(p => p.id === g.pet_id);
+            const idxKey = petIdx >= 0 ? petIdx : 0;
+            if (!pawCache.gallery[idxKey]) pawCache.gallery[idxKey] = [];
+            pawCache.gallery[idxKey].push({ image: g.image_url, time: g.created_at });
+          });
+        }
+
+        pawCache.weightHistory = {};
+        if (weightsRes.data) {
+          weightsRes.data.forEach(w => {
+            const petIdx = pawCache.pets.findIndex(p => p.id === w.pet_id);
+            const idxKey = petIdx >= 0 ? petIdx : 0;
+            if (!pawCache.weightHistory[idxKey]) pawCache.weightHistory[idxKey] = [];
+            pawCache.weightHistory[idxKey].push({ date: w.date, weight: parseFloat(w.weight) });
+          });
+        }
+
+        if (recipesRes.data) {
+          pawCache.customRecipes = recipesRes.data.map(r => ({
+            id: r.id,
+            name: r.name,
+            ingredients: r.ingredients,
+            steps: r.steps,
+            notes: r.notes
+          }));
+        }
+
+        if (profileRes.data) {
+          const p = profileRes.data;
+          pawCache.recipes = p.recipe_store || pawCache.recipes || {};
+          pawCache.weeklyPlan = p.weekly_plan || pawCache.weeklyPlan;
+          pawCache.dailyChecklist = p.daily_checklist || pawCache.dailyChecklist;
+          pawCache.settings = p.settings || {};
+          if (typeof pawCache.settings.active_pet_idx === 'number') {
+            pawCache.activePetIdx = pawCache.settings.active_pet_idx;
+            localStorage.setItem('pawActivePet', String(pawCache.settings.active_pet_idx));
+          }
+          pawCache.recipeFavorites = pawCache.recipes.recipeFavoritesList || [];
+          pawCache.deletedRecipes = pawCache.recipes.deletedRecipesList || [];
+          pawCache.editedRecipes = pawCache.recipes.editedRecipesMap || {};
+          if (p.avatar_url) {
+            localStorage.setItem('pawUserAvatar', p.avatar_url);
+          }
+        }
+
+        if (tasksRes.data) {
+          pawCache.tasks = tasksRes.data.map(t => t.payload);
+        }
+
+      } catch (err) {
+        console.error("Error fetching all data from Supabase:", err);
+        showToast("Sync error. Using local cached data.");
+      }
+    }
+
+    async function callAI(endpoint, payload) {
+      showToast("AI is thinking... 🐾");
+      
+      const loadingScreen = document.getElementById('loadingScreen');
+      if (loadingScreen) {
+        loadingScreen.style.display = 'flex';
+        loadingScreen.style.opacity = '1';
+        const bar = document.getElementById('loadingBar');
+        if (bar) bar.style.width = '60%';
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+      try {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP error ${response.status}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          showToast("Request timed out. Please try again. ⏱️");
+        } else {
+          showToast("Failed to connect to AI. Please check your connection. ❌");
+        }
+        throw error;
+      } finally {
+        if (loadingScreen) {
+          loadingScreen.style.opacity = '0';
+          setTimeout(() => {
+            loadingScreen.style.display = 'none';
+          }, 300);
+        }
+      }
+    }
     let calendarMonthDate = new Date();
     let confirmCallback = null;
     let selectedModalColor = '#FFD5A8';
@@ -36,22 +338,264 @@
       { id: 'all1', pet: 'All', icon: '💧', name: 'Travel Water Bottle', desc: 'Portable water bottle for pets.', price: 229 }
     ];
 
+    // ==================== AI FEATURES HANDLERS ====================
+    async function generateAIRecipe() {
+      const pets = getPets();
+      const activeIdx = getActivePetIdx();
+      const pet = pets[activeIdx] || null;
+      if (!pet) {
+        showToast("Please add a pet profile first.");
+        return;
+      }
+
+      const constraints = document.getElementById('aiRecipeConstraints').value.trim();
+      
+      const payload = {
+        pet: {
+          type: pet.type,
+          breed: pet.breed,
+          age: pet.age,
+          weight: pet.weight
+        },
+        constraints: constraints
+      };
+
+      try {
+        const data = await callAI('/api/generate-recipe', payload);
+        
+        const newId = `custom_ai_${Date.now()}`;
+        const time = parseInt(data.cookTime) || 20;
+        
+        const isNonVeg = (data.ingredients || []).some(ing => {
+          const ingLower = ing.toLowerCase();
+          const nonVegKeywords = ['chicken', 'beef', 'turkey', 'fish', 'meat', 'egg', 'salmon', 'pork', 'shrimp', 'lamb', 'duck', 'tuna', 'sardine', 'liver', 'krill', 'cod', 'prawn', 'crab', 'bacon', 'venison', 'bison', 'anchovy', 'mackerel', 'herring', 'shellfish', 'squid', 'octopus'];
+          return nonVegKeywords.some(keyword => ingLower.includes(keyword));
+        });
+        const type = isNonVeg ? 'Non-Veg' : 'Veg';
+        
+        let cat = 'Meal';
+        const mType = (data.mealType || '').toLowerCase();
+        if (mType.includes('snack') || mType.includes('treat')) {
+          cat = 'Snack';
+        } else if (mType.includes('quick') || mType.includes('emergency')) {
+          cat = 'Quick';
+        } else if (mType.includes('allergy')) {
+          cat = 'Allergy';
+        } else if (mType.includes('budget')) {
+          cat = 'Budget';
+        } else if (mType.includes('season')) {
+          cat = 'Seasonal';
+        }
+
+        const protein = parseInt(data.nutrition?.protein) || 12;
+        const fiber = parseInt(data.nutrition?.fiber) || 4;
+        const vit = Math.round(protein * 2 + fiber * 5) || 60;
+
+        const normalized = {
+          id: newId,
+          title: data.name || 'AI Generated Recipe',
+          pet: [pet.type],
+          type: type,
+          cat: cat,
+          time: time,
+          cookTime: data.cookTime || (time + ' mins'),
+          diff: data.difficulty || 'Easy',
+          cal: parseInt(data.nutrition?.calories) || 300,
+          protein: protein,
+          fiber: fiber,
+          vit: Math.min(95, Math.max(10, vit)),
+          vet: true,
+          budget: true,
+          season: 'All season',
+          ingredients: data.ingredients || [],
+          steps: data.steps || [],
+          benefits: data.benefits || ['Tailored nutrition', 'Fresh ingredients'],
+          frequency: data.frequency || '1-2 times/week',
+          vetTip: data.notes || '',
+          nutritionObj: data.nutrition || {},
+          suitableAgeGroup: data.ageGroup || 'All',
+          healthConditionCompatibility: data.healthCondition || 'Healthy'
+        };
+
+        const custom = getCustomRecipes();
+        custom.push(normalized);
+        saveCustomRecipes(custom);
+
+        normalizeAndMergeDB();
+        renderHomemadeTab();
+        
+        showToast("Custom AI Recipe Generated! 🍲");
+        openRecipeDetailModal(newId);
+        
+        document.getElementById('aiRecipeConstraints').value = '';
+      } catch (error) {
+        console.error(error);
+        showToast("Failed to generate custom recipe.");
+      }
+    }
+
+    async function getAIFeedingAdvice() {
+      const pets = getPets();
+      const activeIdx = getActivePetIdx();
+      const pet = pets[activeIdx];
+      if (!pet) {
+        showToast("Please add or select a pet first.");
+        return;
+      }
+      
+      const payload = {
+        pet: {
+          type: pet.type,
+          breed: pet.breed,
+          age: pet.age,
+          weight: pet.weight,
+          activityLevel: pet.activityLevel || 'Moderate (Normal)'
+        }
+      };
+
+      try {
+        const data = await callAI('/api/feeding-advice', payload);
+        const resultBox = document.getElementById('aiFeedingAdviceResult');
+        if (resultBox) {
+          resultBox.innerHTML = data.result;
+          resultBox.classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error(error);
+        showToast("Failed to fetch feeding advice.");
+      }
+    }
+
 
     // ==================== STORAGE ====================
-    function getUser() { try { return JSON.parse(localStorage.getItem('pawUser')) || null; } catch { return null; } }
-    function getPets() { try { return JSON.parse(localStorage.getItem('pawPets')) || []; } catch { return []; } }
-    function savePets(pets) { localStorage.setItem('pawPets', JSON.stringify(pets)); }
-    function getActivePetIdx() { return parseInt(localStorage.getItem('pawActivePet') || '0'); }
-    function setActivePetIdx(i) { localStorage.setItem('pawActivePet', String(i)); }
+    function getUser() {
+      if (!currentUser) return null;
+      return {
+        name: currentUser.user_metadata?.display_name || currentUser.email?.split('@')[0] || 'Pet Parent',
+        email: currentUser.email,
+        id: currentUser.id
+      };
+    }
+    function getPets() {
+      return pawCache.pets || [];
+    }
+
+    async function savePets(pets) {
+      pawCache.pets = pets;
+      localStorage.setItem('pawPets', JSON.stringify(pets));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        const { data: dbPets, error: fetchErr } = await window.supabaseClient.from('pets').select('id').eq('user_id', userId);
+        if (!fetchErr && dbPets) {
+          const activeIds = pets.map(p => p.id).filter(id => id);
+          const deletedIds = dbPets.filter(p => !activeIds.includes(p.id)).map(p => p.id);
+          if (deletedIds.length > 0) {
+            await window.supabaseClient.from('pets').delete().in('id', deletedIds);
+          }
+        }
+        for (let i = 0; i < pets.length; i++) {
+          const p = pets[i];
+          const payload = {
+            user_id: userId,
+            name: p.name,
+            species: p.type,
+            breed: p.breed || '',
+            age: parseFloat(p.age || 0),
+            weight: parseFloat(p.weight || 0),
+            food_pref: p.foodPref || '',
+            health: p.health || '',
+            water_goal: parseFloat(p.waterGoal || 500),
+            activity_level: p.activityLevel || 'Moderate'
+          };
+          if (p.id) payload.id = p.id;
+          const { data, error } = await window.supabaseClient.from('pets').upsert(payload).select('id').single();
+          if (!error && data) p.id = data.id;
+        }
+      } catch (err) {
+        console.error("Error syncing pets to Supabase:", err);
+      }
+    }
+
+    function getActivePetIdx() {
+      if (typeof pawCache.activePetIdx === 'number') return pawCache.activePetIdx;
+      const stored = localStorage.getItem('pawActivePet');
+      pawCache.activePetIdx = stored ? parseInt(stored) : 0;
+      return pawCache.activePetIdx;
+    }
+
+    async function setActivePetIdx(i) {
+      pawCache.activePetIdx = i;
+      localStorage.setItem('pawActivePet', String(i));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        const settings = pawCache.settings || {};
+        settings.active_pet_idx = i;
+        await window.supabaseClient.from('user_profiles').upsert({
+          id: userId,
+          settings: settings
+        });
+      } catch (err) {
+        console.error("Error syncing active pet index:", err);
+      }
+    }
     function setActivePet(i) {
       setActivePetIdx(i);
       refreshAllUI();
     }
-    function isNoPet() { return localStorage.getItem('pawNoPet') === 'true'; }
-    function getLog() { try { return JSON.parse(localStorage.getItem('pawLog')) || []; } catch { return []; } }
-    function saveLog(log) { localStorage.setItem('pawLog', JSON.stringify(log)); }
-    function getSettings() { try { return JSON.parse(localStorage.getItem('pawSettings')) || {}; } catch { return {}; } }
-    function saveSettings(s) { localStorage.setItem('pawSettings', JSON.stringify(s)); }
+
+    function isNoPet() {
+      return (pawCache.pets || []).length === 0 || pawCache.settings?.noPet === true;
+    }
+
+    function getLog() {
+      return pawCache.logs || [];
+    }
+
+    async function saveLog(log) {
+      pawCache.logs = log;
+      localStorage.setItem('pawLog', JSON.stringify(log));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        for (let i = 0; i < log.length; i++) {
+          const entry = log[i];
+          if (entry.id) continue;
+          const petId = pawCache.pets[entry.petIdx]?.id || null;
+          const { data, error } = await window.supabaseClient.from('feeding_logs').insert({
+            user_id: userId,
+            pet_id: petId,
+            type: entry.type,
+            amount: parseFloat(entry.amount || 0),
+            note: entry.note || '',
+            timestamp: entry.timestamp || new Date().toISOString()
+          }).select('id').single();
+          if (!error && data) entry.id = data.id;
+        }
+      } catch (err) {
+        console.error("Error syncing log to Supabase:", err);
+      }
+    }
+
+    function getSettings() {
+      return pawCache.settings || {};
+    }
+
+    async function saveSettings(s) {
+      pawCache.settings = s;
+      localStorage.setItem('pawSettings', JSON.stringify(s));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        await window.supabaseClient.from('user_profiles').upsert({
+          id: userId,
+          settings: s
+        });
+      } catch (err) {
+        console.error("Error syncing settings:", err);
+      }
+    }
 
     // ==================== LOADING SCREEN ====================
     window.addEventListener('load', function () {
@@ -72,7 +616,7 @@
       }, 1800);
     });
 
-    function initApp() {
+    async function initApp() {
       // Apply dark mode
       const s = getSettings();
       if (s.darkMode) {
@@ -82,12 +626,20 @@
       }
       if (s.reminders) document.getElementById('reminderToggle').classList.add('on');
 
-      if (localStorage.getItem('pawLoggedIn') === 'true') {
-        loadApp();
-        if (s.reminders) startAllReminders();
-      } else {
-        showScreen('loginScreen');
+      if (window.supabaseClient) {
+        try {
+          const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+          if (session) {
+            currentUser = session.user;
+            loadApp();
+            if (s.reminders) startAllReminders();
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to restore Supabase session:", e);
+        }
       }
+      showScreen('loginScreen');
     }
 
     // ==================== DARK MODE ====================
@@ -159,31 +711,83 @@
       document.getElementById(id).classList.remove('hidden');
     }
 
-    // ==================== AUTH ====================
-    function registerUser() {
+    async function registerUser() {
       const name = document.getElementById('regName').value.trim();
       const email = document.getElementById('regEmail').value.trim();
       const password = document.getElementById('regPassword').value.trim();
       if (!name || !email || !password) { showToast('Please fill all fields'); return; }
-      localStorage.setItem('pawUser', JSON.stringify({ name, email, password }));
-      showToast('Account created! Please login.');
-      showScreen('loginScreen');
+      
+      showToast("Creating account... 🐾");
+      if (!window.supabaseClient) {
+        showToast("Supabase client is not initialized.");
+        return;
+      }
+      
+      try {
+        const { data, error } = await window.supabaseClient.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { display_name: name }
+          }
+        });
+        if (error) {
+          showToast(`Error: ${error.message}`);
+          return;
+        }
+        
+        if (data.user) {
+          const { error: profileError } = await window.supabaseClient.from('user_profiles').upsert({
+            id: data.user.id,
+            settings: {},
+            daily_checklist: {}
+          });
+          if (profileError) {
+            console.error("Profile creation error:", profileError.message);
+          }
+        }
+        
+        showToast('Account created! Please check your email or log in.');
+        showScreen('loginScreen');
+      } catch (err) {
+        showToast(`Sign up failed: ${err.message}`);
+      }
     }
 
-    function loginUser() {
+    async function loginUser() {
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value.trim();
-      const user = getUser();
-      if (!user) { showToast('Please create an account first'); return; }
-      if (email === user.email && password === user.password) {
-        localStorage.setItem('pawLoggedIn', 'true');
+      if (!email || !password) { showToast('Please fill all fields'); return; }
+      
+      showToast("Logging in... 🐾");
+      if (!window.supabaseClient) {
+        showToast("Supabase client is not initialized.");
+        return;
+      }
+      
+      try {
+        const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+          email,
+          password
+        });
+        if (error) {
+          showToast(`Error: ${error.message}`);
+          return;
+        }
+        
+        currentUser = data.user;
         loadApp();
-      } else { showToast('Invalid email or password'); }
+      } catch (err) {
+        showToast(`Login failed: ${err.message}`);
+      }
     }
 
-    function logoutUser() {
-      showConfirm('Logout?', 'You will be returned to the login screen.', () => {
-        localStorage.removeItem('pawLoggedIn');
+    async function logoutUser() {
+      showConfirm('Logout?', 'You will be returned to the login screen.', async () => {
+        if (window.supabaseClient) {
+          await window.supabaseClient.auth.signOut();
+        }
+        currentUser = null;
         location.reload();
       });
     }
@@ -245,12 +849,21 @@
       }
     }
 
-    function saveProfile() {
+    async function saveProfile() {
       const user = getUser() || {};
-      user.name = document.getElementById('profileName').value.trim();
+      const newName = document.getElementById('profileName').value.trim();
+      user.name = newName;
       localStorage.setItem('pawUser', JSON.stringify(user));
       loadUser();
       showToast('Profile updated ✅');
+      if (!window.supabaseClient || !currentUser) return;
+      try {
+        await window.supabaseClient.auth.updateUser({
+          data: { display_name: newName }
+        });
+      } catch (err) {
+        console.error("Error updating user auth metadata:", err);
+      }
     }
 
     // ==================== USER AVATAR ====================
@@ -258,22 +871,44 @@
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function (e) {
+      reader.onload = async function (e) {
         const data = e.target.result;
         localStorage.setItem('pawUserAvatar', data);
         document.getElementById('userAvatarPreview').innerHTML = `<img src="${data}" alt="avatar">`;
         document.getElementById('topProfileCircle').innerHTML = `<img src="${data}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
         showToast('Profile photo updated! ✅');
+        if (!window.supabaseClient || !currentUser) return;
+        const userId = currentUser.id;
+        try {
+          await window.supabaseClient.from('user_profiles').upsert({
+            id: userId,
+            avatar_url: data
+          });
+        } catch (err) {
+          console.error("Error updating user avatar in user_profiles:", err);
+        }
       };
       reader.readAsDataURL(file);
     }
 
     // ==================== NO PET TOGGLE ====================
-    function toggleNoPet() {
+    async function toggleNoPet() {
       const checked = document.getElementById('noPetCheck').checked;
+      if (!pawCache.settings) pawCache.settings = {};
+      pawCache.settings.noPet = checked;
       localStorage.setItem('pawNoPet', checked ? 'true' : 'false');
       showToast(checked ? 'Browsing general tips mode' : 'Pet mode enabled');
       refreshAllUI();
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        await window.supabaseClient.from('user_profiles').upsert({
+          id: userId,
+          settings: pawCache.settings
+        });
+      } catch (err) {
+        console.error("Error syncing noPet setting:", err);
+      }
     }
 
     // ==================== PET MODAL ====================
@@ -293,9 +928,10 @@
         document.getElementById('mpetWeight').value = p.weight;
         document.getElementById('mpetWaterGoal').value = p.waterGoal || 500;
         document.getElementById('mfoodPref').value = p.foodPref;
+        document.getElementById('mpetActivityLevel').value = p.activityLevel || 'Moderate (Normal)';
         document.getElementById('mhealthCondition').value = p.health;
         selectedModalColor = p.color || '#FFD5A8';
-
+ 
         // Load avatar
         const prev = document.getElementById('modalAvatarPreview');
         if (p.avatar) {
@@ -311,6 +947,7 @@
         document.getElementById('mpetWeight').value = '';
         document.getElementById('mpetWaterGoal').value = 500;
         document.getElementById('mfoodPref').value = 'Dry Food';
+        document.getElementById('mpetActivityLevel').value = 'Moderate (Normal)';
         document.getElementById('mhealthCondition').value = '';
         document.getElementById('modalAvatarPreview').innerHTML = '<span id="modalAvatarEmoji">🐾</span>';
       }
@@ -375,6 +1012,7 @@
         weight: document.getElementById('mpetWeight').value,
         waterGoal: parseFloat(document.getElementById('mpetWaterGoal').value) || 500,
         foodPref: document.getElementById('mfoodPref').value,
+        activityLevel: document.getElementById('mpetActivityLevel').value,
         health: document.getElementById('mhealthCondition').value.trim(),
         color: selectedModalColor,
         avatar: avatarData || existingAvatar || null,
@@ -400,7 +1038,18 @@
         showToast(pet.name + ' added 🐾');
       }
       savePets(pets);
-      localStorage.setItem('pawNoPet', 'false');
+      if (!pawCache.settings) pawCache.settings = {};
+      if (pawCache.settings.noPet !== false) {
+        pawCache.settings.noPet = false;
+        localStorage.setItem('pawNoPet', 'false');
+        if (window.supabaseClient && currentUser) {
+          const userId = currentUser.id;
+          window.supabaseClient.from('user_profiles').upsert({
+            id: userId,
+            settings: pawCache.settings
+          }).catch(err => console.error("Error syncing settings on add pet:", err));
+        }
+      }
       closePetModal();
       refreshAllUI();
       openTab('home');
@@ -421,6 +1070,11 @@
 
     function setMainPet(idx) {
       setActivePetIdx(idx);
+      const resultBox = document.getElementById('aiFeedingAdviceResult');
+      if (resultBox) {
+        resultBox.innerHTML = '';
+        resultBox.classList.add('hidden');
+      }
       refreshAllUI();
       openTab('home');
       showToast(getPets()[idx]?.name + ' is now active 🐾');
@@ -687,32 +1341,53 @@
 
     // ==================== CARE PLANNER LOGIC ====================
     function getCareTasks() {
-      let tasks = [];
-      try {
-        tasks = JSON.parse(localStorage.getItem('pawCareTasks')) || [];
-      } catch (e) { }
-
+      let tasks = pawCache.tasks || [];
       if (tasks.length === 0) {
         const pets = getPets();
         pets.forEach((pet, petIdx) => {
           initDefaultTasksForPet(petIdx);
         });
-        try {
-          tasks = JSON.parse(localStorage.getItem('pawCareTasks')) || [];
-        } catch (e) { }
+        tasks = pawCache.tasks || [];
       }
       return tasks;
     }
 
-    function saveCareTasks(tasks) {
+    async function saveCareTasks(tasks) {
+      pawCache.tasks = tasks;
       localStorage.setItem('pawCareTasks', JSON.stringify(tasks));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        const { data: dbTasks } = await window.supabaseClient.from('care_tasks').select('id').eq('user_id', userId);
+        if (dbTasks) {
+          const activeIds = tasks.map(t => t.id).filter(id => typeof id === 'number' || (typeof id === 'string' && !id.startsWith('task_')));
+          const deletedIds = dbTasks.filter(t => !activeIds.includes(t.id)).map(t => t.id);
+          if (deletedIds.length > 0) {
+            await window.supabaseClient.from('care_tasks').delete().in('id', deletedIds);
+          }
+        }
+        for (let i = 0; i < tasks.length; i++) {
+          const task = tasks[i];
+          const payload = {
+            user_id: userId,
+            text: task.title || '',
+            completed: task.completed || false,
+            date: task.dateTime ? task.dateTime.slice(0, 10) : new Date().toISOString().slice(0, 10),
+            payload: task
+          };
+          if (task.id && typeof task.id === 'number') {
+            payload.id = task.id;
+          }
+          const { data, error } = await window.supabaseClient.from('care_tasks').upsert(payload).select('id').single();
+          if (!error && data) task.id = data.id;
+        }
+      } catch (err) {
+        console.error("Error syncing care tasks to Supabase:", err);
+      }
     }
 
     function initDefaultTasksForPet(petIdx) {
-      let tasks = [];
-      try {
-        tasks = JSON.parse(localStorage.getItem('pawCareTasks')) || [];
-      } catch (e) { }
+      let tasks = pawCache.tasks || [];
 
       const today = new Date().toISOString().slice(0, 10);
       const defaultTasks = [
@@ -737,7 +1412,7 @@
           completed: false
         });
       });
-      localStorage.setItem('pawCareTasks', JSON.stringify(tasks));
+      saveCareTasks(tasks);
     }
 
     function taskAppliesToDate(task, dateStr) {
@@ -1297,6 +1972,21 @@
       const pets = getPets();
       const activeIdx = getActivePetIdx();
       const box = document.getElementById('petListBox');
+      
+      const adviceContainer = document.getElementById('aiFeedingAdviceContainer');
+      if (adviceContainer) {
+        if (pets.length > 0) {
+          adviceContainer.classList.remove('hidden');
+        } else {
+          adviceContainer.classList.add('hidden');
+          const resultBox = document.getElementById('aiFeedingAdviceResult');
+          if (resultBox) {
+            resultBox.innerHTML = '';
+            resultBox.classList.add('hidden');
+          }
+        }
+      }
+
       if (pets.length === 0) {
         box.innerHTML = `<div class="empty-state" style="padding:14px 0"><p>No pets added yet.</p></div>`;
         return;
@@ -1749,60 +2439,67 @@
       const typingId = 'typing_' + Date.now();
       addMessageId('Thinking...', 'bot-msg typing-msg', typingId);
 
-      try {
-        const pets = getPets();
-        const activeIdx = getActivePetIdx();
-        const pet = pets[activeIdx];
-        const log = getLog();
-        const today = todayStr();
-        const todayFed = pet ? log.filter(e => e.petIdx === activeIdx && e.type === 'fed' && e.timestamp.slice(0, 10) === today).length : 0;
-        const streak = calculateStreak();
+      const pets = getPets();
+      const activeIdx = getActivePetIdx();
+      const pet = pets[activeIdx];
+      const log = getLog();
+      const today = todayStr();
+      const todayFed = pet ? log.filter(e => e.petIdx === activeIdx && e.type === 'fed' && e.timestamp.slice(0, 10) === today).length : 0;
+      const streak = calculateStreak();
 
-        let systemPrompt = `You are PawFeed AI, a friendly and knowledgeable pet care assistant. Give helpful, concise advice about pet feeding, nutrition, health, symptoms, and care. If the user describes any symptoms (e.g. vomiting, diarrhea, coughing, lethargy, skin problems), act as an AI symptom checker: analyze what it might indicate, advise on whether to see a vet urgently (adding ⚠️), soon, or just monitor at home, and provide one helpful home care tip. Keep responses under 130 words and conversational. Always be warm and encouraging.`;
-        if (pet) {
-          systemPrompt += ` The user's active pet is ${pet.name}, a ${pet.age}-year-old ${pet.breed} ${pet.type} weighing ${pet.weight}kg. Food preference: ${pet.foodPref}. Health notes: ${pet.health || 'healthy'}. Today's feedings logged: ${todayFed}. Current feeding streak: ${streak} days. Water goal: ${pet.waterGoal || 500}ml/day. Mood today: ${pet.moodToday || 'not logged'}. Reference this pet specifically when relevant.`;
-        }
-        if (pets.length > 1) {
-          systemPrompt += ` They also have ${pets.length - 1} other pet(s): ${pets.filter((_, i) => i !== activeIdx).map(p => p.name + ' the ' + p.type).join(', ')}.`;
-        }
-
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=YOUR_GEMINI_API_KEY`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{
-                parts: [{
-                  text: systemPrompt + "\n\nUser: " + text
-                }]
-              }]
-            })
-          }
-        );
-
-        const data = await response.json();
-
-        console.log(data);
-
-        const reply =
-          data.candidates?.[0]?.content?.parts?.[0]?.text ||
-          'Sorry, I could not get a response. Please try again.';
-
-        document.getElementById(typingId)?.remove();
-        addMessage(reply, 'bot-msg');
-
-      } catch (err) {
-        console.error(err);
-
-        document.getElementById(typingId)?.remove();
-
-        addMessage(
-          'Sorry, I\'m having trouble connecting. Please check your connection and try again.',
-          'bot-msg'
-        );
+      let systemPrompt = `You are PawFeed AI, a friendly and knowledgeable pet care assistant. Give helpful, concise advice about pet feeding, nutrition, health, symptoms, and care. If the user describes any symptoms (e.g. vomiting, diarrhea, coughing, lethargy, skin problems), act as an AI symptom checker: analyze what it might indicate, advise on whether to see a vet urgently (adding ⚠️), soon, or just monitor at home, and provide one helpful home care tip. Keep responses under 130 words and conversational. Always be warm and encouraging.`;
+      if (pet) {
+        systemPrompt += ` The user's active pet is ${pet.name}, a ${pet.age}-year-old ${pet.breed} ${pet.type} weighing ${pet.weight}kg. Food preference: ${pet.foodPref}. Health notes: ${pet.health || 'healthy'}. Today's feedings logged: ${todayFed}. Current feeding streak: ${streak} days. Water goal: ${pet.waterGoal || 500}ml/day. Mood today: ${pet.moodToday || 'not logged'}. Reference this pet specifically when relevant.`;
+      }
+      if (pets.length > 1) {
+        systemPrompt += ` They also have ${pets.length - 1} other pet(s): ${pets.filter((_, i) => i !== activeIdx).map(p => p.name + ' the ' + p.type).join(', ')}.`;
       }
 
+      async function attemptFetch() {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/pawfeed-ai`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ systemPrompt, userMessage: text }),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if (!response.ok) {
+            throw new Error(`HTTP status ${response.status}`);
+          }
+          return await response.json();
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
+      }
+
+      let data;
+      try {
+        data = await attemptFetch();
+      } catch (err) {
+        console.warn('First fetch attempt failed, retrying once...', err);
+        try {
+          data = await attemptFetch();
+        } catch (retryErr) {
+          console.error('Retry attempt failed as well:', retryErr);
+          document.getElementById(typingId)?.remove();
+          
+          let errorMsg = 'Sorry, I\'m having trouble connecting. Please check your connection and try again.';
+          if (retryErr.name === 'AbortError') {
+            errorMsg = 'Request timed out. Please try again.';
+          }
+          addMessage(errorMsg, 'bot-msg');
+          return;
+        }
+      }
+
+      const reply = data.reply || 'Sorry, I could not get a response. Please try again.';
+      document.getElementById(typingId)?.remove();
+      addMessage(reply, 'bot-msg');
     }
     function addMessage(text, cls) {
       const chat = document.getElementById('chatWindow');
@@ -1830,12 +2527,77 @@
     });
 
     // ==================== ADVANCED MODULES STORAGE ====================
-    function getCommunityPosts() { try { return JSON.parse(localStorage.getItem('pawCommunityPosts')) || []; } catch { return []; } }
-    function saveCommunityPosts(posts) { localStorage.setItem('pawCommunityPosts', JSON.stringify(posts)); }
-    function getCart() { try { return JSON.parse(localStorage.getItem('pawCart')) || []; } catch { return []; } }
-    function saveCart(cart) { localStorage.setItem('pawCart', JSON.stringify(cart)); }
-    function getScanHistory() { try { return JSON.parse(localStorage.getItem('pawScanHistory')) || []; } catch { return []; } }
-    function saveScanHistory(items) { localStorage.setItem('pawScanHistory', JSON.stringify(items)); }
+    function getCommunityPosts() {
+      return pawCache.communityPosts || [];
+    }
+
+    async function saveCommunityPosts(posts) {
+      pawCache.communityPosts = posts;
+      localStorage.setItem('pawCommunityPosts', JSON.stringify(posts));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        for (let i = 0; i < posts.length; i++) {
+          const post = posts[i];
+          if (post.id) continue;
+          const { data, error } = await window.supabaseClient.from('community_posts').insert({
+            user_id: userId,
+            content: post.content || '',
+            image_url: post.image || null
+          }).select('id').single();
+          if (!error && data) post.id = data.id;
+        }
+      } catch (err) {
+        console.error("Error syncing community posts:", err);
+      }
+    }
+
+    function getCart() {
+      return pawCache.cart || [];
+    }
+
+    async function saveCart(cart) {
+      pawCache.cart = cart;
+      localStorage.setItem('pawCart', JSON.stringify(cart));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        await window.supabaseClient.from('cart_items').delete().eq('user_id', userId);
+        if (cart.length > 0) {
+          const rows = cart.map(item => ({
+            user_id: userId,
+            product_id: String(item.id || item.product_id),
+            quantity: parseInt(item.quantity || 1)
+          }));
+          await window.supabaseClient.from('cart_items').insert(rows);
+        }
+      } catch (err) {
+        console.error("Error syncing cart to Supabase:", err);
+      }
+    }
+
+    function getScanHistory() {
+      return pawCache.scanHistory || [];
+    }
+
+    async function saveScanHistory(items) {
+      pawCache.scanHistory = items;
+      localStorage.setItem('pawScanHistory', JSON.stringify(items));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        await window.supabaseClient.from('scan_history').delete().eq('user_id', userId);
+        if (items.length > 0) {
+          const rows = items.map(item => ({
+            user_id: userId,
+            result: item
+          }));
+          await window.supabaseClient.from('scan_history').insert(rows);
+        }
+      } catch (err) {
+        console.error("Error syncing scan history:", err);
+      }
+    }
 
     // ==================== COMMUNITY FEATURES ====================
     function handleCommunityImage(event) {
@@ -1923,10 +2685,41 @@
       const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
       box.innerHTML = cart.map(i => `<div class="history-item"><div class="history-icon">${i.icon}</div><div class="history-text"><b>${i.name}</b><span>Qty: ${i.qty} · ₹${i.price * i.qty}</span></div><button class="small-btn" onclick="removeFromCart('${i.id}')">✕</button></div>`).join('') + `<div class="divider"></div><b>Total: ₹${total}</b>`;
     }
-    function checkoutCart() {
+    function getOrders() {
+      return pawCache.orders || [];
+    }
+
+    async function saveOrders(orders) {
+      pawCache.orders = orders;
+      localStorage.setItem('pawOrders', JSON.stringify(orders));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        for (let i = 0; i < orders.length; i++) {
+          const order = orders[i];
+          const payload = {
+            user_id: userId,
+            date: order.date || new Date().toISOString(),
+            items: order.items,
+            total: parseFloat(order.total || 0)
+          };
+          const numericId = parseInt(order.id?.replace(/\D/g, ''));
+          if (numericId && !isNaN(numericId)) {
+            payload.id = numericId;
+          }
+          await window.supabaseClient.from('orders').upsert(payload);
+        }
+      } catch (err) {
+        console.error("Error syncing orders to Supabase:", err);
+      }
+    }
+
+    async function checkoutCart() {
       const cart = getCart(); if (!cart.length) { showToast('Cart is empty'); return; }
       const order = { id: 'PF' + Date.now(), items: cart, total: cart.reduce((s, i) => s + i.price * i.qty, 0), date: new Date().toISOString() };
-      const orders = JSON.parse(localStorage.getItem('pawOrders') || '[]'); orders.unshift(order); localStorage.setItem('pawOrders', JSON.stringify(orders));
+      const orders = getOrders();
+      orders.unshift(order);
+      await saveOrders(orders);
       saveCart([]); renderMarketplace(); showToast('Demo order placed ✅');
     }
 
@@ -1945,8 +2738,9 @@
     }
     function completeChallenge(key, xp) {
       const doneKey = 'pawChallenge_' + todayStr() + '_' + key;
-      if (localStorage.getItem(doneKey)) { showToast('Already completed today'); return; }
       const log = getLog();
+      const alreadyDone = log.some(e => e.type === 'challenge' && e.timestamp.startsWith(todayStr()) && e.note.includes(key));
+      if (alreadyDone || localStorage.getItem(doneKey)) { showToast('Already completed today'); return; }
       log.unshift({ id: Date.now(), type: 'challenge', note: 'Completed challenge: ' + key + ' (+' + xp + ' XP)', timestamp: new Date().toISOString(), petName: 'PawFeed', petIdx: -1 });
       saveLog(log); localStorage.setItem(doneKey, 'true'); renderGameTab(); showToast('Challenge completed +' + xp + ' XP 🏆');
     }
@@ -2029,8 +2823,24 @@
     let foodTimer = null;
     let recipeLimit = 15;
 
-    function getRecipeStore() { return JSON.parse(localStorage.getItem('pawfeedRecipes') || '{"favorites":[],"saved":[],"recent":[],"reviews":[],"weekly":[],"shopping":[],"reactions":[]}'); }
-    function saveRecipeStore(st) { localStorage.setItem('pawfeedRecipes', JSON.stringify(st)); }
+    function getRecipeStore() {
+      return pawCache.recipes || { favorites: [], saved: [], recent: [], reviews: [], weekly: [], shopping: [], reactions: [] };
+    }
+
+    async function saveRecipeStore(st) {
+      pawCache.recipes = st;
+      localStorage.setItem('pawfeedRecipes', JSON.stringify(st));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        await window.supabaseClient.from('user_profiles').upsert({
+          id: userId,
+          recipe_store: st
+        });
+      } catch (err) {
+        console.error("Error syncing recipe store:", err);
+      }
+    }
 
     function normalizeAndMergeDB() {
       if (!recipeDB || Object.keys(recipeDB).length === 0) return;
@@ -2223,11 +3033,56 @@
       }
     }
     function seedRecipeReviews() { showToast('Recipe ratings & reviews added ⭐'); const box = document.getElementById('recipeLibraryBox'); box.insertAdjacentHTML('afterbegin', '<div class="card success"><b>⭐ Community Reviews</b><p class="subtitle" style="margin:5px 0 0">Chicken Rice Bowl: 4.8/5 • Easy digestion • Pets loved it.</p></div>'); }
-    function shareRecipeCommunity(id) { const r = HOME_RECIPES.find(x => x.id === id); if (!r) return; const posts = JSON.parse(localStorage.getItem('pawfeedCommunity') || '[]'); posts.unshift({ type: 'recipe', caption: `Shared homemade recipe: ${r.title}. Ingredients: ${r.ingredients.join(', ')}`, time: new Date().toISOString() }); localStorage.setItem('pawfeedCommunity', JSON.stringify(posts)); showToast('Recipe shared to community 👥'); }
+    function shareRecipeCommunity(id) {
+      const r = HOME_RECIPES.find(x => x.id === id);
+      if (!r) return;
+      const user = getUser() || { name: 'Pet Parent' };
+      const pets = getPets();
+      const active = pets[getActivePetIdx()] || pets[0] || null;
+      const posts = getCommunityPosts();
+      posts.unshift({
+        id: Date.now(),
+        type: 'recipe',
+        caption: `Shared homemade recipe: ${r.title}. Ingredients: ${r.ingredients.join(', ')}`,
+        author: user.name || 'Pet Parent',
+        petName: active ? active.name : 'Pet',
+        petAvatar: active ? active.avatar : '',
+        petIcon: active ? (PET_ICONS[active.type] || '🐾') : '🐾',
+        likes: 0,
+        date: new Date().toISOString()
+      });
+      saveCommunityPosts(posts.slice(0, 60));
+      showToast('Recipe shared to community 👥');
+    }
 
     // ==================== MOOD TRACKER ====================
-    function getMoodLog() { return JSON.parse(localStorage.getItem('pawMoodLog') || '[]'); }
-    function saveMoodLog(d) { localStorage.setItem('pawMoodLog', JSON.stringify(d)); }
+    function getMoodLog() {
+      return pawCache.moodLog || [];
+    }
+
+    async function saveMoodLog(d) {
+      pawCache.moodLog = d;
+      localStorage.setItem('pawMoodLog', JSON.stringify(d));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        await window.supabaseClient.from('mood_logs').delete().eq('user_id', userId);
+        if (d.length > 0) {
+          const rows = d.map(item => {
+            const petId = pawCache.pets[item.petIdx]?.id || null;
+            return {
+              user_id: userId,
+              pet_id: petId,
+              date: item.date,
+              label: item.label
+            };
+          });
+          await window.supabaseClient.from('mood_logs').insert(rows);
+        }
+      } catch (err) {
+        console.error("Error syncing mood log to Supabase:", err);
+      }
+    }
     function logMood(emoji, label) {
       const pets = getPets(); const idx = getActivePetIdx();
       const pet = pets[idx]; if (!pet) { showToast('Add a pet first'); return; }
@@ -2251,8 +3106,43 @@
     }
 
     // ==================== MEDICATION ====================
-    function getMeds() { return JSON.parse(localStorage.getItem('pawMeds') || '[]'); }
-    function saveMeds(d) { localStorage.setItem('pawMeds', JSON.stringify(d)); }
+    function getMeds() {
+      return pawCache.meds || [];
+    }
+
+    async function saveMeds(d) {
+      pawCache.meds = d;
+      localStorage.setItem('pawMeds', JSON.stringify(d));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        const { data: dbMeds } = await window.supabaseClient.from('meds').select('id').eq('user_id', userId);
+        if (dbMeds) {
+          const activeIds = d.map(item => item.id).filter(id => typeof id === 'number' && id < 10000000000);
+          const deletedIds = dbMeds.filter(m => !activeIds.includes(m.id)).map(m => m.id);
+          if (deletedIds.length > 0) {
+            await window.supabaseClient.from('meds').delete().in('id', deletedIds);
+          }
+        }
+        for (let i = 0; i < d.length; i++) {
+          const item = d[i];
+          const payload = {
+            user_id: userId,
+            name: item.name,
+            dosage: item.dose || '',
+            frequency: item.time || '',
+            next_due: item.time ? new Date().toISOString().slice(0, 10) + 'T' + item.time : null
+          };
+          if (item.id && typeof item.id === 'number' && item.id < 10000000000) {
+            payload.id = item.id;
+          }
+          const { data, error } = await window.supabaseClient.from('meds').upsert(payload).select('id').single();
+          if (!error && data) item.id = data.id;
+        }
+      } catch (err) {
+        console.error("Error syncing meds to Supabase:", err);
+      }
+    }
     function addMed() {
       const name = document.getElementById('medName').value.trim();
       const dose = document.getElementById('medDose').value.trim();
@@ -2280,8 +3170,34 @@
     }
 
     // ==================== VET LOG ====================
-    function getVetLog() { return JSON.parse(localStorage.getItem('pawVetLog') || '[]'); }
-    function saveVetLog(d) { localStorage.setItem('pawVetLog', JSON.stringify(d)); }
+    function getVetLog() {
+      return pawCache.vetLog || [];
+    }
+
+    async function saveVetLog(d) {
+      pawCache.vetLog = d;
+      localStorage.setItem('pawVetLog', JSON.stringify(d));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        await window.supabaseClient.from('vet_logs').delete().eq('user_id', userId);
+        if (d.length > 0) {
+          const rows = d.map(item => {
+            const petId = pawCache.pets[item.petIdx]?.id || null;
+            return {
+              user_id: userId,
+              pet_id: petId,
+              date: item.date,
+              clinic: item.clinic || '',
+              notes: (item.reason || '') + (item.notes ? '\n' + item.notes : '')
+            };
+          });
+          await window.supabaseClient.from('vet_logs').insert(rows);
+        }
+      } catch (err) {
+        console.error("Error syncing vet logs to Supabase:", err);
+      }
+    }
     function addVetVisit() {
       const date = document.getElementById('vetDate').value;
       const clinic = document.getElementById('vetClinic').value.trim();
@@ -2310,8 +3226,34 @@
     }
 
     // ==================== SLEEP TRACKER ====================
-    function getSleepLog() { return JSON.parse(localStorage.getItem('pawSleepLog') || '[]'); }
-    function saveSleepLog(d) { localStorage.setItem('pawSleepLog', JSON.stringify(d)); }
+    function getSleepLog() {
+      return pawCache.sleepLog || [];
+    }
+
+    async function saveSleepLog(d) {
+      pawCache.sleepLog = d;
+      localStorage.setItem('pawSleepLog', JSON.stringify(d));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        await window.supabaseClient.from('sleep_logs').delete().eq('user_id', userId);
+        if (d.length > 0) {
+          const rows = d.map(item => {
+            const petId = pawCache.pets[item.petIdx]?.id || null;
+            return {
+              user_id: userId,
+              pet_id: petId,
+              date: item.date,
+              hours: parseFloat(item.hours || 0),
+              quality: item.quality || 'Good'
+            };
+          });
+          await window.supabaseClient.from('sleep_logs').insert(rows);
+        }
+      } catch (err) {
+        console.error("Error syncing sleep log to Supabase:", err);
+      }
+    }
     function logSleep() {
       const hours = document.getElementById('sleepHours').value;
       const quality = document.getElementById('sleepQuality').value;
@@ -2338,8 +3280,34 @@
     }
 
     // ==================== GALLERY ====================
-    function getGallery(petIdx) { return JSON.parse(localStorage.getItem('pawGallery_' + petIdx) || '[]'); }
-    function saveGallery(petIdx, d) { localStorage.setItem('pawGallery_' + petIdx, JSON.stringify(d)); }
+    function getGallery(petIdx) {
+      if (!pawCache.gallery) pawCache.gallery = {};
+      return pawCache.gallery[petIdx] || [];
+    }
+
+    async function saveGallery(petIdx, d) {
+      if (!pawCache.gallery) pawCache.gallery = {};
+      pawCache.gallery[petIdx] = d;
+      localStorage.setItem('pawGallery_' + petIdx, JSON.stringify(d));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      const petId = pawCache.pets[petIdx]?.id || null;
+      if (!petId) return;
+      try {
+        await window.supabaseClient.from('pet_gallery').delete().eq('user_id', userId).eq('pet_id', petId);
+        if (d.length > 0) {
+          const rows = d.map(item => ({
+            user_id: userId,
+            pet_id: petId,
+            image_url: item.image,
+            created_at: item.time || new Date().toISOString()
+          }));
+          await window.supabaseClient.from('pet_gallery').insert(rows);
+        }
+      } catch (err) {
+        console.error("Error syncing gallery to Supabase:", err);
+      }
+    }
     function handleGalleryUpload(e) {
       const files = Array.from(e.target.files);
       const idx = getActivePetIdx();
@@ -2386,8 +3354,34 @@
     }
 
     // ==================== WEIGHT CHART ====================
-    function getWeightHistory(petIdx) { return JSON.parse(localStorage.getItem('pawWeightHistory_' + petIdx) || '[]'); }
-    function saveWeightHistory(petIdx, d) { localStorage.setItem('pawWeightHistory_' + petIdx, JSON.stringify(d)); }
+    function getWeightHistory(petIdx) {
+      if (!pawCache.weightHistory) pawCache.weightHistory = {};
+      return pawCache.weightHistory[petIdx] || [];
+    }
+
+    async function saveWeightHistory(petIdx, d) {
+      if (!pawCache.weightHistory) pawCache.weightHistory = {};
+      pawCache.weightHistory[petIdx] = d;
+      localStorage.setItem('pawWeightHistory_' + petIdx, JSON.stringify(d));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      const petId = pawCache.pets[petIdx]?.id || null;
+      if (!petId) return;
+      try {
+        await window.supabaseClient.from('weight_history').delete().eq('user_id', userId).eq('pet_id', petId);
+        if (d.length > 0) {
+          const rows = d.map(item => ({
+            user_id: userId,
+            pet_id: petId,
+            date: item.date,
+            weight: parseFloat(item.weight || 0)
+          }));
+          await window.supabaseClient.from('weight_history').insert(rows);
+        }
+      } catch (err) {
+        console.error("Error syncing weight history to Supabase:", err);
+      }
+    }
     function logWeight() {
       const val = parseFloat(document.getElementById('weightInput').value);
       if (isNaN(val) || val <= 0) { showToast('Enter a valid weight'); return; }
@@ -2471,16 +3465,8 @@
       const moods7 = moodLog.filter(m => m.petIdx === idx && days7.includes(m.date)).map(m => m.label).join(', ') || 'not logged';
       const sleep7 = sleepLog.filter(s => s.petIdx === idx && days7.includes(s.date)).map(s => `${s.hours}h(${s.quality})`).join(', ') || 'not logged';
       const weight = pet?.weight ? pet.weight + 'kg' : 'not logged';
-      try {
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=YOUR_GEMINI_API_KEY`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{
-                parts: [{
-                  text: `You are PawFeed AI generating a friendly weekly health summary.
+
+      const promptText = `You are PawFeed AI generating a friendly weekly health summary.
 
 Pet: ${pet ? `${pet.name}, ${pet.age}yr ${pet.breed} ${pet.type}, ${weight}` : 'Unknown'}
 
@@ -2496,19 +3482,50 @@ Write:
 4. Sleep notes
 5. One actionable tip
 
-Use emojis and keep under 150 words.`
-                }]
-              }]
-            })
+Use emojis and keep under 150 words.`;
+
+      async function attemptFetch() {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/pawfeed-weekly-summary`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ promptText }),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if (!response.ok) {
+            throw new Error(`HTTP status ${response.status}`);
           }
-        );
-        const data = await response.json();
+          return await response.json();
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
+      }
 
-        const reply =
-          data.candidates?.[0]?.content?.parts?.[0]?.text ||
-          'Could not generate summary.';
+      let data;
+      try {
+        data = await attemptFetch();
+      } catch (err) {
+        console.warn('First weekly summary fetch failed, retrying once...', err);
+        try {
+          data = await attemptFetch();
+        } catch (retryErr) {
+          console.error('Weekly summary retry failed:', retryErr);
+          let errorMsg = 'Could not generate summary. Check your internet connection and try again.';
+          if (retryErr.name === 'AbortError') {
+            errorMsg = 'Could not generate summary. Request timed out.';
+          }
+          box.innerHTML = errorMsg;
+          return;
+        }
+      }
 
-        box.innerHTML = `
+      const reply = data.reply || 'Could not generate summary.';
+      box.innerHTML = `
 <div class="card">
   <h3 style="font-weight:900;color:var(--dark);margin-bottom:10px">
     📊 ${pet?.name || 'Your pet'}'s Week in Review
@@ -2517,11 +3534,6 @@ Use emojis and keep under 150 words.`
     ${reply.replace(/\n/g, '<br>')}
   </p>
 </div>`;
-      } catch (e) {
-        console.error(e);
-        box.innerHTML =
-          'Could not generate summary. Check your internet connection and try again.';
-      }
     }
     // ==================== STREAKS & MILESTONES ====================
     function renderStreaksTab() {
@@ -19264,16 +20276,71 @@ Use emojis and keep under 150 words.`
     // ==================== NEW RECIPE DB CRUD & MEAL PLANNER ====================
     let recipeAnimalFilter = 'All';
 
-    function getDeletedRecipes() { return JSON.parse(localStorage.getItem('pawfeed_deleted_recipes') || '[]'); }
-    function saveDeletedRecipes(list) { localStorage.setItem('pawfeed_deleted_recipes', JSON.stringify(list)); }
-    def_custom_recipes = [];
-    function getCustomRecipes() { return JSON.parse(localStorage.getItem('pawfeed_custom_recipes') || '[]'); }
-    function saveCustomRecipes(list) { localStorage.setItem('pawfeed_custom_recipes', JSON.stringify(list)); }
-    function getEditedRecipes() { return JSON.parse(localStorage.getItem('pawfeed_edited_recipes') || '{}'); }
-    function saveEditedRecipes(map) { localStorage.setItem('pawfeed_edited_recipes', JSON.stringify(map)); }
+    function getDeletedRecipes() {
+      return pawCache.deletedRecipes || [];
+    }
 
-    function getRecipeFavorites() { return JSON.parse(localStorage.getItem('pawfeed_recipe_favorites') || '[]'); }
-    function saveRecipeFavorites(favs) { localStorage.setItem('pawfeed_recipe_favorites', JSON.stringify(favs)); }
+    async function saveDeletedRecipes(list) {
+      pawCache.deletedRecipes = list;
+      localStorage.setItem('pawfeed_deleted_recipes', JSON.stringify(list));
+      if (!window.supabaseClient || !currentUser) return;
+      const currentStore = pawCache.recipes || {};
+      currentStore.deletedRecipesList = list;
+      await saveRecipeStore(currentStore);
+    }
+
+    def_custom_recipes = [];
+    function getCustomRecipes() {
+      return pawCache.customRecipes || [];
+    }
+
+    async function saveCustomRecipes(list) {
+      pawCache.customRecipes = list;
+      localStorage.setItem('pawfeed_custom_recipes', JSON.stringify(list));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        await window.supabaseClient.from('custom_recipes').delete().eq('user_id', userId);
+        if (list.length > 0) {
+          const rows = list.map(r => ({
+            user_id: userId,
+            name: r.name,
+            ingredients: r.ingredients,
+            steps: r.steps,
+            notes: r.notes || ''
+          }));
+          await window.supabaseClient.from('custom_recipes').insert(rows);
+        }
+      } catch (err) {
+        console.error("Error syncing custom recipes to Supabase:", err);
+      }
+    }
+
+    function getEditedRecipes() {
+      return pawCache.editedRecipes || {};
+    }
+
+    async function saveEditedRecipes(map) {
+      pawCache.editedRecipes = map;
+      localStorage.setItem('pawfeed_edited_recipes', JSON.stringify(map));
+      if (!window.supabaseClient || !currentUser) return;
+      const currentStore = pawCache.recipes || {};
+      currentStore.editedRecipesMap = map;
+      await saveRecipeStore(currentStore);
+    }
+
+    function getRecipeFavorites() {
+      return pawCache.recipeFavorites || [];
+    }
+
+    async function saveRecipeFavorites(favs) {
+      pawCache.recipeFavorites = favs;
+      localStorage.setItem('pawfeed_recipe_favorites', JSON.stringify(favs));
+      if (!window.supabaseClient || !currentUser) return;
+      const currentStore = pawCache.recipes || {};
+      currentStore.recipeFavoritesList = favs;
+      await saveRecipeStore(currentStore);
+    }
     function isRecipeFavorite(id) { return getRecipeFavorites().includes(id); }
 
     function toggleRecipeFavorite(id) {
@@ -19750,25 +20817,30 @@ Use emojis and keep under 150 words.`
 
     // Interactive Planner Functions
     function getWeeklyPlan() {
-      let plan = localStorage.getItem('pawfeed_weekly_plan');
-      if (!plan) {
-        plan = {
-          Mon: { breakfast: null, lunch: null, dinner: null },
-          Tue: { breakfast: null, lunch: null, dinner: null },
-          Wed: { breakfast: null, lunch: null, dinner: null },
-          Thu: { breakfast: null, lunch: null, dinner: null },
-          Fri: { breakfast: null, lunch: null, dinner: null },
-          Sat: { breakfast: null, lunch: null, dinner: null },
-          Sun: { breakfast: null, lunch: null, dinner: null }
-        };
-        localStorage.setItem('pawfeed_weekly_plan', JSON.stringify(plan));
-        return plan;
-      }
-      return JSON.parse(plan);
+      return pawCache.weeklyPlan || {
+        Mon: { breakfast: null, lunch: null, dinner: null },
+        Tue: { breakfast: null, lunch: null, dinner: null },
+        Wed: { breakfast: null, lunch: null, dinner: null },
+        Thu: { breakfast: null, lunch: null, dinner: null },
+        Fri: { breakfast: null, lunch: null, dinner: null },
+        Sat: { breakfast: null, lunch: null, dinner: null },
+        Sun: { breakfast: null, lunch: null, dinner: null }
+      };
     }
 
-    function saveWeeklyPlan(plan) {
+    async function saveWeeklyPlan(plan) {
+      pawCache.weeklyPlan = plan;
       localStorage.setItem('pawfeed_weekly_plan', JSON.stringify(plan));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        await window.supabaseClient.from('user_profiles').upsert({
+          id: userId,
+          weekly_plan: plan
+        });
+      } catch (err) {
+        console.error("Error syncing weekly plan to Supabase:", err);
+      }
     }
 
     let activePlannerDay = '';
@@ -20119,29 +21191,47 @@ Use emojis and keep under 150 words.`
           { text: '🧼 Grooming / Clean Area', checked: false, isCustom: false }
         ]
       };
-      try {
-        const stored = localStorage.getItem('pawDailyChecklist');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          const today = todayStr();
-          if (parsed.lastDate !== today) {
-            if (parsed.autoReset) {
-              parsed.items.forEach(item => item.checked = false);
-            }
-            parsed.lastDate = today;
-            localStorage.setItem('pawDailyChecklist', JSON.stringify(parsed));
-          }
-          return parsed;
-        }
-      } catch (e) {
-        console.error(e);
+      
+      let parsed = pawCache.dailyChecklist && Object.keys(pawCache.dailyChecklist).length > 0
+        ? pawCache.dailyChecklist
+        : null;
+        
+      if (!parsed) {
+        try {
+          const stored = localStorage.getItem('pawDailyChecklist');
+          if (stored) parsed = JSON.parse(stored);
+        } catch (e) { }
       }
-      localStorage.setItem('pawDailyChecklist', JSON.stringify(defaultChecklist));
-      return defaultChecklist;
+      
+      if (!parsed) {
+        parsed = defaultChecklist;
+      }
+      
+      const today = todayStr();
+      if (parsed.lastDate !== today) {
+        if (parsed.autoReset) {
+          parsed.items.forEach(item => item.checked = false);
+        }
+        parsed.lastDate = today;
+        saveDailyChecklist(parsed);
+      }
+      
+      return parsed;
     }
 
-    function saveDailyChecklist(data) {
+    async function saveDailyChecklist(data) {
+      pawCache.dailyChecklist = data;
       localStorage.setItem('pawDailyChecklist', JSON.stringify(data));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        await window.supabaseClient.from('user_profiles').upsert({
+          id: userId,
+          daily_checklist: data
+        });
+      } catch (err) {
+        console.error("Error syncing daily checklist to Supabase:", err);
+      }
     }
 
     function toggleDailyChecklistItem(index) {
@@ -20378,15 +21468,41 @@ Use emojis and keep under 150 words.`
 
     // ==================== EXPENSE TRACKER ====================
     function getExpenses() {
-      try {
-        return JSON.parse(localStorage.getItem('pawExpenses')) || [];
-      } catch (e) {
-        return [];
-      }
+      return pawCache.expenses || [];
     }
 
-    function saveExpenses(expenses) {
+    async function saveExpenses(expenses) {
+      pawCache.expenses = expenses;
       localStorage.setItem('pawExpenses', JSON.stringify(expenses));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        const { data: dbExpenses } = await window.supabaseClient.from('expenses').select('id').eq('user_id', userId);
+        if (dbExpenses) {
+          const activeIds = expenses.map(item => item.id).filter(id => typeof id === 'number' && id < 10000000000);
+          const deletedIds = dbExpenses.filter(m => !activeIds.includes(m.id)).map(m => m.id);
+          if (deletedIds.length > 0) {
+            await window.supabaseClient.from('expenses').delete().in('id', deletedIds);
+          }
+        }
+        for (let i = 0; i < expenses.length; i++) {
+          const item = expenses[i];
+          const payload = {
+            user_id: userId,
+            amount: parseFloat(item.amount || 0),
+            category: item.category || 'Other',
+            description: item.desc || '',
+            date: item.date || new Date().toISOString().slice(0, 10)
+          };
+          if (item.id && typeof item.id === 'number' && item.id < 10000000000) {
+            payload.id = item.id;
+          }
+          const { data, error } = await window.supabaseClient.from('expenses').upsert(payload).select('id').single();
+          if (!error && data) item.id = data.id;
+        }
+      } catch (err) {
+        console.error("Error syncing expenses to Supabase:", err);
+      }
     }
 
     function addExpense() {
@@ -20529,24 +21645,51 @@ Use emojis and keep under 150 words.`
 
     // ==================== FOOD & MEDICINE STOCK TRACKER ====================
     function getStockItems() {
-      try {
-        const stored = localStorage.getItem('pawStock');
-        if (stored) return JSON.parse(stored);
-      } catch (e) {
-        console.error(e);
-      }
       const demoStock = [
         { id: 1, name: 'Premium Puppy Kibble 🥣', type: 'food', quantity: 2500, unit: 'g', threshold: 500, decrementAmount: 100 },
         { id: 2, name: 'Tuna Wet Cans 🥣', type: 'food', quantity: 8, unit: 'cans', threshold: 2, decrementAmount: 1 },
         { id: 3, name: 'Deworming Pills 💊', type: 'medicine', quantity: 6, unit: 'pills', threshold: 2, decrementAmount: 1 },
         { id: 4, name: 'Amoxicillin Syrup 💊', type: 'medicine', quantity: 120, unit: 'ml', threshold: 30, decrementAmount: 5 }
       ];
-      localStorage.setItem('pawStock', JSON.stringify(demoStock));
-      return demoStock;
+      
+      let items = pawCache.stockItems || [];
+      if (items.length === 0) {
+        try {
+          const stored = localStorage.getItem('pawStock');
+          if (stored) items = JSON.parse(stored);
+        } catch (e) { }
+        if (!items || items.length === 0) {
+          items = demoStock;
+          saveStockItems(items);
+        } else {
+          pawCache.stockItems = items;
+        }
+      }
+      return items;
     }
 
-    function saveStockItems(items) {
+    async function saveStockItems(items) {
+      pawCache.stockItems = items;
       localStorage.setItem('pawStock', JSON.stringify(items));
+      if (!window.supabaseClient || !currentUser) return;
+      const userId = currentUser.id;
+      try {
+        await window.supabaseClient.from('stock_items').delete().eq('user_id', userId);
+        if (items.length > 0) {
+          const rows = items.map(item => ({
+            user_id: userId,
+            name: item.name,
+            type: item.type,
+            quantity: parseFloat(item.quantity || 0),
+            unit: item.unit || 'g',
+            threshold: parseFloat(item.threshold || 0),
+            decrement_amount: parseFloat(item.decrementAmount || 0)
+          }));
+          await window.supabaseClient.from('stock_items').insert(rows);
+        }
+      } catch (err) {
+        console.error("Error syncing stock items to Supabase:", err);
+      }
     }
 
     function addStockItem() {

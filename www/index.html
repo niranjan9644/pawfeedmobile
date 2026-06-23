@@ -297,6 +297,13 @@
         <option>Mixed Food</option>
       </select>
 
+      <label>Activity Level</label>
+      <select id="mpetActivityLevel" style="width: 100%; border-radius: 12px; padding: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); margin-bottom: 12px;">
+        <option>Low (Sedentary)</option>
+        <option selected>Moderate (Normal)</option>
+        <option>High (Active)</option>
+      </select>
+
       <label>Health Condition</label>
       <textarea id="mhealthCondition" placeholder="Example: healthy, allergy, digestion issue, obesity"></textarea>
 
@@ -618,7 +625,6 @@
         </div>
       </div>
 
-
       <!-- COMMUNITY TAB -->
       <div id="communityTab" class="screen tab-screen hidden">
         <h2 style="font-weight:900;color:var(--dark)">👥 Pet Community</h2>
@@ -831,6 +837,15 @@
           <button class="primary-btn" onclick="saveFoodReaction()">Save Reaction</button>
         </div>
 
+        <!-- AI Recipe Generator Card -->
+        <div class="card" style="margin-top:14px; background: #FFF9E6; border: 1.5px dashed var(--orange)">
+          <h3 style="font-weight:900;color:var(--dark);margin-bottom:6px">🍲 Custom AI Recipe Generator</h3>
+          <p class="subtitle" style="margin-bottom:12px">Generate a custom balanced recipe tailored to your active pet's breed, age, and diet type.</p>
+          <label style="margin: 0 0 6px 0">Dietary Constraints / Preferences (Optional)</label>
+          <input id="aiRecipeConstraints" placeholder="e.g. No chicken, low fat, grain-free..." style="margin-bottom:12px; width: 100%; border-radius: 12px; padding: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text);" />
+          <button class="primary-btn" onclick="generateAIRecipe()">🍲 Generate Custom AI Recipe</button>
+        </div>
+
         <div class="section-header">
           <h3 class="section-title">🍱 Recipe Library</h3>
         </div>
@@ -885,6 +900,15 @@
         <h3 class="section-title">🐾 My Pets</h3>
         <div id="petListBox"></div>
         <button class="primary-btn" onclick="openPetModal(-1)" style="margin-top:4px">+ Add New Pet</button>
+
+        <!-- AI Feeding Advice Card -->
+        <div id="aiFeedingAdviceContainer" class="card hidden" style="margin-top:16px; background: #E6F4FF; border: 1.5px dashed var(--blue)">
+          <h3 style="font-weight:900;color:var(--dark);margin-bottom:6px">🧬 Smart AI Feeding Advice</h3>
+          <p class="subtitle" style="margin-bottom:12px">Get AI portion suggestions and nutrition tips tailored to your active pet.</p>
+          <button class="primary-btn" onclick="getAIFeedingAdvice()" style="width: 100%;">🧬 Get AI Feeding Advice</button>
+          
+          <div id="aiFeedingAdviceResult" class="hidden" style="margin-top:12px; line-height: 1.6; color: var(--text); font-size: 14px;"></div>
+        </div>
 
         <div id="noPetSection" class="card" style="margin-top:16px">
           <div style="display:flex;align-items:center;gap:10px">
@@ -1151,6 +1175,10 @@
 
   <!-- Capacitor runtime bridge (injected by native shell on device) -->
   <script src="capacitor.js"></script>
+
+  <!-- Supabase client libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabaseClient.js"></script>
 
   <!-- PawFeed application logic -->
   <script src="app.js"></script>
