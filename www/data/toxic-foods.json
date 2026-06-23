@@ -1,0 +1,702 @@
+[
+  {
+    "name": "Chocolate",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, diarrhea, increased thirst, panting, restlessness, excessive urination, rapid heart rate, muscle spasms, seizures, death.",
+    "notes": "Contains theobromine and caffeine. Dark chocolate, baking chocolate, and cocoa powder are highly toxic."
+  },
+  {
+    "name": "Grapes",
+    "species_affected": "dogs",
+    "severity": "severe",
+    "symptoms": "Vomiting, diarrhea, lethargy, dehydration, loss of appetite, decreased or absent urination.",
+    "notes": "Can cause acute, irreversible kidney failure. Even a single grape or raisin can be fatal to some dogs."
+  },
+  {
+    "name": "Raisins",
+    "species_affected": "dogs",
+    "severity": "severe",
+    "symptoms": "Vomiting, diarrhea, lethargy, dehydration, loss of appetite, decreased or absent urination.",
+    "notes": "Concentrated form of grapes. Highly toxic, causing acute kidney failure."
+  },
+  {
+    "name": "Onions",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, diarrhea, weakness, lethargy, pale gums, rapid heart rate, red-colored urine.",
+    "notes": "Contains thiosulfates which cause oxidative damage to red blood cells, leading to hemolytic anemia. Cats are highly sensitive."
+  },
+  {
+    "name": "Garlic",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, diarrhea, weakness, lethargy, pale gums, rapid heart rate, red-colored urine.",
+    "notes": "More potent than onions. Causes hemolytic anemia by damaging red blood cells."
+  },
+  {
+    "name": "Leeks",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, diarrhea, weakness, lethargy, pale gums, rapid heart rate, red-colored urine.",
+    "notes": "Part of the Allium family. Causes damage to red blood cells."
+  },
+  {
+    "name": "Chives",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, diarrhea, weakness, lethargy, pale gums, rapid heart rate, red-colored urine.",
+    "notes": "Part of the Allium family. Even dried or powdered forms are highly toxic."
+  },
+  {
+    "name": "Xylitol (Birch Sugar)",
+    "species_affected": "dogs",
+    "severity": "severe",
+    "symptoms": "Vomiting, weakness, loss of coordination, lethargy, tremors, seizures, yellowing of skin/gums, death.",
+    "notes": "Common sweetener in sugar-free gum, peanut butter, and baked goods. Causes rapid, severe hypoglycemia and liver failure."
+  },
+  {
+    "name": "Lilies (Lilium species)",
+    "species_affected": "cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, drooling, lethargy, loss of appetite, dehydration, kidney failure.",
+    "notes": "Ingestion of any part of the plant, including pollen or water from the vase, causes acute renal failure in cats."
+  },
+  {
+    "name": "Macadamia Nuts",
+    "species_affected": "dogs",
+    "severity": "moderate",
+    "symptoms": "Weakness (especially in hind legs), depression, vomiting, tremors, high body temperature (hyperthermia).",
+    "notes": "Symptoms usually resolve within 24-48 hours. Avoid all products containing macadamia nuts."
+  },
+  {
+    "name": "Caffeine",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Restlessness, hyperactivity, panting, vomiting, rapid or abnormal heart rate, tremors, seizures.",
+    "notes": "Found in coffee, tea, energy drinks, and soda. Stimulates the central nervous and cardiovascular systems."
+  },
+  {
+    "name": "Yeast Dough",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Abdominal bloating, pain, retching, gas, weakness, loss of coordination, alcohol poisoning.",
+    "notes": "Expands in the stomach causing painful bloating (GDV risk). Fermentation produces ethanol, causing alcohol poisoning."
+  },
+  {
+    "name": "Alcohol (Ethanol)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, disorientation, loss of coordination, slowed breathing, drop in body temperature, coma, seizures.",
+    "notes": "Can cause severe central nervous system depression, low blood sugar, metabolic acidosis, and respiratory failure."
+  },
+  {
+    "name": "Avocado",
+    "species_affected": "dogs, cats, birds",
+    "severity": "mild to moderate",
+    "symptoms": "Vomiting and diarrhea in dogs/cats. Respiratory distress, fluid accumulation around heart in birds.",
+    "notes": "Contains persin. Relatively mild for dogs/cats, but highly toxic to birds, rabbits, and livestock."
+  },
+  {
+    "name": "Macadamia Nuts",
+    "species_affected": "dogs",
+    "severity": "moderate",
+    "symptoms": "Weakness, depression, vomiting, tremors, hyperthermia.",
+    "notes": "Do not feed raw or roasted macadamia nuts."
+  },
+  {
+    "name": "Walnuts (Moldy)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Tremors, seizures, vomiting, weakness, high fever.",
+    "notes": "Can contain tremorgenic mycotoxins produced by molds, which are highly neurotoxic."
+  },
+  {
+    "name": "Pecans",
+    "species_affected": "dogs, cats",
+    "severity": "mild to moderate",
+    "symptoms": "Upset stomach, vomiting, diarrhea, obstruction if shell is swallowed.",
+    "notes": "High fat content can cause pancreatitis. Moldy pecans can contain tremorgenic mycotoxins."
+  },
+  {
+    "name": "Cherry Pits",
+    "species_affected": "dogs, cats",
+    "severity": "moderate to severe",
+    "symptoms": "Dilated pupils, breathing difficulties, bright red gums, shock, weakness.",
+    "notes": "Pits contain cyanide. Eating the fruit flesh is safe, but the pits are toxic and present a choking/obstruction hazard."
+  },
+  {
+    "name": "Peach Pits",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Dilated pupils, bright red gums, heavy breathing, shock, salivation.",
+    "notes": "Contains cyanide. Also poses a major intestinal obstruction risk."
+  },
+  {
+    "name": "Plum Pits",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Breathing distress, dilated pupils, shock, brick-red mucous membranes.",
+    "notes": "Pits contain amygdalin, which breaks down into cyanide."
+  },
+  {
+    "name": "Apple Seeds",
+    "species_affected": "dogs, cats",
+    "severity": "mild to moderate",
+    "symptoms": "Dilated pupils, breathing difficulty, red gums, shock.",
+    "notes": "Seeds contain amygdalin (cyanide compound). A few seeds won't hurt, but large quantities are toxic."
+  },
+  {
+    "name": "Apricot Pits",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Dilated pupils, breathing difficulty, shock, bright red gums.",
+    "notes": "Contains cyanide compounds. Extremely hazardous if crushed or chewed."
+  },
+  {
+    "name": "Mustard Seeds",
+    "species_affected": "dogs, cats",
+    "severity": "mild to moderate",
+    "symptoms": "Vomiting, diarrhea, abdominal pain, gastroenteritis.",
+    "notes": "Contains compounds that irritate the stomach and intestinal lining."
+  },
+  {
+    "name": "Wild Mushrooms (Amanita species)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, diarrhea, drooling, tear production, coordination loss, liver/kidney failure, seizures, death.",
+    "notes": "Many wild mushrooms are highly toxic. Assume any wild mushroom is toxic unless identified by an expert."
+  },
+  {
+    "name": "Raw Potatoes",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Vomiting, diarrhea, lethargy, confusion, weakness.",
+    "notes": "Contains solanine, a toxic glycoalkaloid. Cooking potatoes neutralizes solanine, making them safe."
+  },
+  {
+    "name": "Green Tomatoes",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Vomiting, diarrhea, drooling, muscle weakness, confusion, slowed heart rate.",
+    "notes": "Green parts of the tomato plant and unripe green fruits contain solanine. Ripe red tomatoes are safe in moderation."
+  },
+  {
+    "name": "Rhubarb Leaves",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, diarrhea, excessive drooling, tremors, blood in urine, kidney failure.",
+    "notes": "Leaves contain soluble calcium oxalate crystals, which cause acute kidney injury."
+  },
+  {
+    "name": "Starfruit",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, diarrhea, salivation, blood in urine, tremors, kidney damage.",
+    "notes": "Contains soluble calcium oxalates, which can cause acute kidney injury."
+  },
+  {
+    "name": "Hops (used in brewing)",
+    "species_affected": "dogs",
+    "severity": "severe",
+    "symptoms": "Malignant hyperthermia (extremely high body temp), panting, rapid heart rate, anxiety, vomiting, seizures.",
+    "notes": "Both fresh and spent hops are dangerous. Can cause fatal hyperthermia within hours."
+  },
+  {
+    "name": "Nutmeg",
+    "species_affected": "dogs, cats",
+    "severity": "moderate to severe",
+    "symptoms": "Dry mouth, abdominal pain, high heart rate, disorientation, tremors, seizures.",
+    "notes": "Contains myristicin, which is hallucinogenic and toxic in large quantities."
+  },
+  {
+    "name": "Raw Meat & Fish",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Vomiting, diarrhea, fever, lethargy, dehydration.",
+    "notes": "Can carry Salmonella, E. coli, or Listeria. Raw fish can contain thiaminase, which causes thiamine (B1) deficiency."
+  },
+  {
+    "name": "Raw Eggs",
+    "species_affected": "dogs, cats",
+    "severity": "mild to moderate",
+    "symptoms": "Skin and coat issues, lethargy, vomiting, diarrhea.",
+    "notes": "Contains avidin, which inhibits biotin (Vitamin B7) absorption. Also carries Salmonella risk."
+  },
+  {
+    "name": "Citrus Oil / Peel",
+    "species_affected": "dogs, cats",
+    "severity": "mild to moderate",
+    "symptoms": "Vomiting, diarrhea, excessive drooling, skin irritation (if applied topically).",
+    "notes": "Peels and essential oils contain limonene and linalool, which are toxic to the liver."
+  },
+  {
+    "name": "Salt (Sodium Chloride)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, diarrhea, excessive thirst/urination, tremors, high fever, seizures, brain swelling, death.",
+    "notes": "Eating large amounts of salt or salty foods leads to sodium ion poisoning (salt toxicity)."
+  },
+  {
+    "name": "Macadamia Nuts",
+    "species_affected": "dogs",
+    "severity": "moderate",
+    "symptoms": "Weakness, depression, vomiting, tremors, hyperthermia.",
+    "notes": "High fat content also increases the risk of pancreatitis."
+  },
+  {
+    "name": "Dairy Products (Milk, Cheese)",
+    "species_affected": "dogs, cats",
+    "severity": "mild to moderate",
+    "symptoms": "Diarrhea, gas, bloating, vomiting, abdominal discomfort.",
+    "notes": "Most adult pets are lactose intolerant. Small amounts of plain cheese are usually tolerated, but large quantities cause upset."
+  },
+  {
+    "name": "Fat Trimmings",
+    "species_affected": "dogs, cats",
+    "severity": "moderate to severe",
+    "symptoms": "Vomiting, severe abdominal pain, diarrhea, lethargy, pancreatitis.",
+    "notes": "High fat meals trigger acute pancreatitis, which can be life-threatening."
+  },
+  {
+    "name": "Cooked Bones",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Choking, vomiting, blood in stool, constipation, lethargy, abdominal pain.",
+    "notes": "Cooked bones splinter easily, causing throat lacerations, stomach perforation, or intestinal blockage."
+  },
+  {
+    "name": "Sago Palm",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting (often bloody), dark tarry stools, yellow skin/gums, bleeding disorders, liver failure, death.",
+    "notes": "Contains cycasin. All parts are toxic, especially the seeds. Ingestion has a high mortality rate."
+  },
+  {
+    "name": "Azaleas (Rhododendron species)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, diarrhea, drooling, weakness, depression, cardiovascular collapse, coma.",
+    "notes": "Contains grayanotoxins, which disrupt skeletal and cardiac muscle function."
+  },
+  {
+    "name": "Tulip Bulbs",
+    "species_affected": "dogs, cats",
+    "severity": "moderate to severe",
+    "symptoms": "Intense salivation, vomiting, diarrhea, depression, increased heart rate, difficulty breathing.",
+    "notes": "The bulb contains the highest concentration of tulipanin toxins. Avoid digging up bulbs."
+  },
+  {
+    "name": "Oleander (Nerium oleander)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, diarrhea, slow or irregular heart rate, drop in body temp, tremors, death.",
+    "notes": "Contains cardiac glycosides. Extremely toxic; even a single leaf can be fatal."
+  },
+  {
+    "name": "Castor Bean",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Burning sensation in mouth, drooling, vomiting, severe bloody diarrhea, abdominal pain, seizures, death.",
+    "notes": "Contains ricin, one of the most potent natural toxins known. Symptoms can take 12-48 hours to appear."
+  },
+  {
+    "name": "English Ivy",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Vomiting, diarrhea, abdominal pain, hyper-salivation.",
+    "notes": "Contains triterpenoid saponins. Foliage is more toxic than the berries."
+  },
+  {
+    "name": "Chrysanthemums",
+    "species_affected": "dogs, cats",
+    "severity": "mild to moderate",
+    "symptoms": "Vomiting, diarrhea, drooling, coordination loss, skin inflammation (dermatitis).",
+    "notes": "Contains pyrethrins, which irritate the gastrointestinal tract and nervous system."
+  },
+  {
+    "name": "Autumn Crocus",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Oral irritation, bloody vomiting, diarrhea, organ damage, bone marrow suppression, shock.",
+    "notes": "Contains colchicine, causing multi-organ failure. Very different and far more toxic than Spring Crocus."
+  },
+  {
+    "name": "Poinsettias",
+    "species_affected": "dogs, cats",
+    "severity": "mild",
+    "symptoms": "Drooling, mild vomiting, skin irritation.",
+    "notes": "Often over-feared. Sap is irritating to the mouth and stomach, but rarely causes serious poisoning."
+  },
+  {
+    "name": "Mistletoe",
+    "species_affected": "dogs, cats",
+    "severity": "moderate to severe",
+    "symptoms": "Vomiting, diarrhea, low blood pressure, slowed heart rate, breathing difficulty.",
+    "notes": "Contains toxalbumins and pharatoxin. Can cause cardiovascular collapse in large doses."
+  },
+  {
+    "name": "Holly Berries",
+    "species_affected": "dogs, cats",
+    "severity": "mild to moderate",
+    "symptoms": "Vomiting, diarrhea, drooling, lip-smacking, head-shaking.",
+    "notes": "Leaves and berries contain saponins, which are gastrointestinal irritants."
+  },
+  {
+    "name": "Aspirin",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting (often bloody), dark tarry stools, rapid breathing, fever, coordination loss, kidney failure.",
+    "notes": "NSAID medication. Cats are extremely sensitive due to a lack of liver enzymes to break it down."
+  },
+  {
+    "name": "Ibuprofen (Advil, Motrin)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, bloody stools, abdominal pain, weakness, kidney failure, stomach ulcers.",
+    "notes": "Extremely toxic. Even one tablet can cause life-threatening stomach ulceration and renal failure."
+  },
+  {
+    "name": "Acetaminophen (Tylenol)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Brown gums/tongue, swelling of face/paws, breathing difficulty, vomiting, dark urine, liver failure.",
+    "notes": "Destroys red blood cells' ability to carry oxygen (methemoglobinemia). Cats are highly vulnerable."
+  },
+  {
+    "name": "Essential Oils (Tea Tree, Eucalyptus)",
+    "species_affected": "dogs, cats",
+    "severity": "moderate to severe",
+    "symptoms": "Drooling, vomiting, tremors, coordination loss, weakness, low body temp, liver damage.",
+    "notes": "Highly concentrated. Easily absorbed through skin or when licked. Keep out of reach."
+  },
+  {
+    "name": "Tobacco & Nicotine",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Hyperactivity, drooling, vomiting, rapid heart rate, tremors, collapse, seizures, death.",
+    "notes": "Includes cigarettes, vape liquids, patches, and gums. Rapidly toxic."
+  },
+  {
+    "name": "Bleach",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Drooling, vomiting, chemical burns in mouth/throat, severe abdominal pain, coughing.",
+    "notes": "Corrosive agent. Do not induce vomiting; contact a vet immediately."
+  },
+  {
+    "name": "Fertilizers",
+    "species_affected": "dogs, cats",
+    "severity": "mild to severe",
+    "symptoms": "Vomiting, diarrhea, drooling, abnormal posture, breathing difficulty.",
+    "notes": "Some contain bone/blood meal which makes them appealing to dogs, but they can contain toxic metals or pesticides."
+  },
+  {
+    "name": "Antifreeze (Ethylene Glycol)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Initial 'drunken' behavior, vomiting, excessive thirst, rapid heart rate, kidney failure, coma, death.",
+    "notes": "Has a sweet taste that pets like. Extremely toxic; causes crystallization in kidneys. Needs immediate treatment."
+  },
+  {
+    "name": "Rodenticides (Rat Poison)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Internal bleeding, nosebleeds, bloody stool/urine, coughing blood, pale gums, weakness, seizures.",
+    "notes": "Many types prevent blood clotting (anticoagulants) or cause brain swelling. Fatal without antidote (Vitamin K)."
+  },
+  {
+    "name": "Slug and Snail Bait (Metaldehyde)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Severe twitching, tremors, high fever, rapid breathing, anxiety, seizures, death.",
+    "notes": "Known as 'shake and bake' syndrome due to extreme muscle spasms and life-threatening high body temp."
+  },
+  {
+    "name": "Macadamia Nuts",
+    "species_affected": "dogs",
+    "severity": "moderate",
+    "symptoms": "Weakness, tremors, vomiting, joint pain.",
+    "notes": "Keep all nut mixes away from dogs."
+  },
+  {
+    "name": "Persimmon Seeds",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Vomiting, diarrhea, intestinal blockage.",
+    "notes": "Seeds can cause inflammation or blockage in the small intestine."
+  },
+  {
+    "name": "Raw Salmon / Trout",
+    "species_affected": "dogs",
+    "severity": "severe",
+    "symptoms": "High fever, vomiting, bloody diarrhea, swollen lymph nodes, discharge from eyes/nose.",
+    "notes": "Can carry Nanophyetus salmincola parasites infected with Neorickettsia helminthoeca bacteria (Salmon Poisoning Disease)."
+  },
+  {
+    "name": "Xylitol (Toothpaste)",
+    "species_affected": "dogs",
+    "severity": "severe",
+    "symptoms": "Vomiting, low blood sugar, weakness, seizures.",
+    "notes": "Never use human toothpaste on dogs; always use pet-safe toothpaste."
+  },
+  {
+    "name": "Unripe Tomatoes",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Lethargy, drooling, stomach upset, weakness.",
+    "notes": "Solanine levels are high in green tomatoes and tomato vines."
+  },
+  {
+    "name": "Lilies of the Valley",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, diarrhea, low heart rate, severe cardiac arrhythmias, seizures.",
+    "notes": "Contains cardendolides, which affect heart rate and rhythm."
+  },
+  {
+    "name": "Yew (Taxus species)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Nausea, vomiting, weakness, breathing difficulty, heart rate drop, sudden death.",
+    "notes": "Contains taxines. All parts of the plant are extremely poisonous. Can cause sudden cardiac failure."
+  },
+  {
+    "name": "Cyclamen",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Severe drooling, vomiting, diarrhea, heart arrhythmias, seizures, death.",
+    "notes": "The tubers contain toxic cyclamin saponins, which are highly irritating."
+  },
+  {
+    "name": "Aloe Vera",
+    "species_affected": "dogs, cats",
+    "severity": "mild to moderate",
+    "symptoms": "Vomiting, diarrhea, lethargy, tremors, change in urine color.",
+    "notes": "Contains aloin, which acts as a laxative and irritates the GI tract."
+  },
+  {
+    "name": "Dieffenbachia (Dumb Cane)",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Intense oral burning, swelling of tongue/lips, difficulty swallowing, drooling.",
+    "notes": "Contains insoluble calcium oxalate crystals which penetrate oral tissue, causing swelling."
+  },
+  {
+    "name": "Philodendron",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Oral pain, drooling, pawing at mouth, swelling, vomiting.",
+    "notes": "Contains insoluble calcium oxalate crystals. Keep out of reach of pets."
+  },
+  {
+    "name": "Peace Lily",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Oral irritation, drooling, difficulty swallowing, vomiting.",
+    "notes": "Unlike true lilies, it causes local irritation from calcium oxalate crystals, not systemic kidney failure."
+  },
+  {
+    "name": "Jade Plant",
+    "species_affected": "dogs, cats",
+    "severity": "mild to moderate",
+    "symptoms": "Vomiting, depression, slowed heart rate (bradycardia), coordination loss.",
+    "notes": "Toxic principle is unknown. Also known as rubber plant."
+  },
+  {
+    "name": "Snake Plant (Mother-in-Law's Tongue)",
+    "species_affected": "dogs, cats",
+    "severity": "mild to moderate",
+    "symptoms": "Salivation, vomiting, diarrhea, depression.",
+    "notes": "Contains saponins, which act as local gastrointestinal irritants."
+  },
+  {
+    "name": "Eucalyptus",
+    "species_affected": "dogs, cats",
+    "severity": "mild to moderate",
+    "symptoms": "Salivation, vomiting, diarrhea, depression, weakness.",
+    "notes": "Contains eucalyptol. Essential oil forms are significantly more toxic."
+  },
+  {
+    "name": "Marijuana (THC)",
+    "species_affected": "dogs, cats",
+    "severity": "moderate to severe",
+    "symptoms": "Disorientation, dribbling urine, slowed heart rate, hyper-excitability, tremors, pupil dilation.",
+    "notes": "Dogs have more cannabinoid receptors than humans, making them highly sensitive."
+  },
+  {
+    "name": "Mothballs",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, pale/yellow gums, lethargy, seizures, anemia, kidney damage.",
+    "notes": "Usually contain naphthalene or paradichlorobenzene. Highly toxic."
+  },
+  {
+    "name": "Cocoa Mulch",
+    "species_affected": "dogs",
+    "severity": "severe",
+    "symptoms": "Vomiting, diarrhea, hyperactivity, rapid heart rate, seizures.",
+    "notes": "Made from cocoa bean shells. Contains theobromine. Dogs are attracted to the chocolate smell."
+  },
+  {
+    "name": "Lead",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, abdominal pain, behavior changes, blindness, coordination loss, seizures.",
+    "notes": "From old paint chips, solder, or weights. Causes neurological and gastrointestinal toxicity."
+  },
+  {
+    "name": "Pennies (Minted post-1982)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, pale/yellow gums, red urine, lethargy, kidney failure, anemia.",
+    "notes": "Post-1982 pennies are mostly zinc. Acid in stomach dissolves the coin, causing severe zinc poisoning."
+  },
+  {
+    "name": "Paint Thinner",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Drooling, difficulty breathing, vomiting, chemical burns, weakness, coma.",
+    "notes": "Hydrocarbon solvent. Never induce vomiting, as aspiration into lungs is highly fatal."
+  },
+  {
+    "name": "Citrus Essential Oil",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Drooling, vomiting, tremors, low body temp, coordination loss.",
+    "notes": "Keep diffusers out of areas where cats/dogs can inhale or lick the oil."
+  },
+  {
+    "name": "Onion Powder",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, weakness, pale gums, red urine.",
+    "notes": "Concentrated form of onions. Common in baby foods, gravies, and soups."
+  },
+  {
+    "name": "Garlic Powder",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Hemolytic anemia, pale gums, rapid heart rate, weakness.",
+    "notes": "Concentrated form of garlic. Far more potent than fresh garlic cloves."
+  },
+  {
+    "name": "Solanine (Potato Sprouts)",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Vomiting, diarrhea, drooling, lethargy, confusion.",
+    "notes": "Always cut green parts and sprouts off potatoes before cooking for pets."
+  },
+  {
+    "name": "Solanine (Tomato Leaves)",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Vomiting, drooling, slowed heart rate, weakness.",
+    "notes": "Keep pets away from tomato gardens."
+  },
+  {
+    "name": "Persin (Avocado Leaves)",
+    "species_affected": "dogs, cats, birds",
+    "severity": "moderate",
+    "symptoms": "Congestion, breathing difficulty, fluid in lungs in birds.",
+    "notes": "The leaves and bark contain the highest persin levels."
+  },
+  {
+    "name": "Cyanide (Apple Seeds)",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Breathing difficulty, red gums, dilated pupils, shock.",
+    "notes": "Ensure apple slices are cored and deseeded before feeding to pets."
+  },
+  {
+    "name": "Lactose (Cow's Milk)",
+    "species_affected": "dogs, cats",
+    "severity": "mild",
+    "symptoms": "Diarrhea, stomach gas, loose stools.",
+    "notes": "Adult pets lack the lactase enzyme to digest cow's milk."
+  },
+  {
+    "name": "Tea Tree Oil",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Tremors, weakness, loss of coordination, low body temp, liver failure.",
+    "notes": "Highly toxic to cats even in low cutaneous applications."
+  },
+  {
+    "name": "Eucalyptus Oil",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Drooling, vomiting, diarrhea, lethargy, weakness.",
+    "notes": "Do not apply directly to pet skin or coats."
+  },
+  {
+    "name": "Antifreeze (Propylene Glycol)",
+    "species_affected": "dogs, cats",
+    "severity": "moderate to severe",
+    "symptoms": "Depression, loss of coordination, seizures, Heinz body anemia in cats.",
+    "notes": "Safer than ethylene glycol, but still highly toxic to pets in quantity."
+  },
+  {
+    "name": "Rat Poison (Bromethalin)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Tremors, seizures, coordination loss, hind limb paralysis, death.",
+    "notes": "Causes cerebral edema (brain swelling). No direct antidote."
+  },
+  {
+    "name": "Metaldehyde (Slug Pellets)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Twitching, extreme panting, high fever, seizures.",
+    "notes": "Pets must be treated immediately with muscle relaxants and cooling therapy."
+  },
+  {
+    "name": "Pennies (Zinc)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, depression, pale/yellow gums, dark red urine.",
+    "notes": "Ingested pennies dissolve in stomach acids releasing toxic zinc doses."
+  },
+  {
+    "name": "Baking Soda",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Vomiting, diarrhea, muscle spasms, congestive heart failure.",
+    "notes": "In large quantities, disrupts electrolyte balances."
+  },
+  {
+    "name": "Baking Powder",
+    "species_affected": "dogs, cats",
+    "severity": "moderate",
+    "symptoms": "Vomiting, diarrhea, muscle spasms, heart failure.",
+    "notes": "Contains baking soda and acid salts. Toxic in large quantities."
+  },
+  {
+    "name": "Macadamia Nut Butter",
+    "species_affected": "dogs",
+    "severity": "moderate",
+    "symptoms": "Weakness, tremors, vomiting, joint pain.",
+    "notes": "Avoid cookies or spreads containing macadamia nuts."
+  },
+  {
+    "name": "Play-Dough (Homemade)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, seizures, extreme thirst, lethargy, death.",
+    "notes": "Contains very high salt concentrations, causing sodium poisoning."
+  },
+  {
+    "name": "Wild Mushrooms (Gyromitra)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Vomiting, bloody diarrhea, liver failure, seizures.",
+    "notes": "Contains hydrazines. Highly toxic."
+  },
+  {
+    "name": "Wild Mushrooms (Inocybe)",
+    "species_affected": "dogs, cats",
+    "severity": "severe",
+    "symptoms": "Drooling, tear production, tiny pupils, low heart rate, breathing difficulty.",
+    "notes": "Contains muscarine. Causes severe cholinergic symptoms."
+  }
+]

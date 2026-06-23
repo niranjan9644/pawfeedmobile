@@ -1,0 +1,24 @@
+{
+  "dog": {
+    "puppy": [
+      { "age": "6-8 weeks", "items": ["DHPP (Distemper, Hepatitis, Parvovirus, Parainfluenza) #1", "Deworming #1"] },
+      { "age": "10-12 weeks", "items": ["DHPP #2", "Leptospirosis #1 (optional/lifestyle)", "Bordetella (Kennel Cough)", "Deworming #2"] },
+      { "age": "14-16 weeks", "items": ["DHPP #3", "Leptospirosis #2", "Rabies (1-year)", "Deworming #3"] }
+    ],
+    "adult": [
+      { "age": "1 year after puppy series", "items": ["DHPP booster (good for 1-3 years)", "Rabies booster (good for 1-3 years depending on local law)", "Bordetella booster (yearly/half-yearly)", "Leptospirosis booster (yearly)"] },
+      { "age": "Every 1-3 years", "items": ["DHPP booster", "Rabies booster"] }
+    ]
+  },
+  "cat": {
+    "kitten": [
+      { "age": "6-8 weeks", "items": ["FVRCP (Rhinotracheitis, Calicivirus, Panleukopenia) #1", "Deworming #1"] },
+      { "age": "10-12 weeks", "items": ["FVRCP #2", "FeLV (Feline Leukemia Virus) #1 (optional/lifestyle)", "Deworming #2"] },
+      { "age": "14-16 weeks", "items": ["FVRCP #3", "FeLV #2", "Rabies (1-year)", "Deworming #3"] }
+    ],
+    "adult": [
+      { "age": "1 year after kitten series", "items": ["FVRCP booster (good for 1-3 years)", "Rabies booster (good for 1-3 years)", "FeLV booster (yearly for outdoor cats)"] },
+      { "age": "Every 1-3 years", "items": ["FVRCP booster", "Rabies booster"] }
+    ]
+  }
+}

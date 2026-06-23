@@ -19,6 +19,139 @@
     let reminderTimers = [];
     let selectedPlannerDateStr = new Date().toISOString().slice(0, 10);
 
+    let TOXIC_FOODS = [];
+    let NUTRITION_GUIDELINES = {};
+    let SYMPTOM_TRIAGE = [];
+    let VACCINE_SCHEDULE = {};
+    let breedCache = {
+      Dog: JSON.parse(localStorage.getItem('cachedDogBreeds')) || [],
+      Cat: JSON.parse(localStorage.getItem('cachedCatBreeds')) || []
+    };
+
+    async function loadReferenceDatasets() {
+      try {
+        const [r1, r2, r3, r4] = await Promise.all([
+          fetch('data/toxic-foods.json').then(r => r.json()),
+          fetch('data/nutrition-guidelines.json').then(r => r.json()),
+          fetch('data/symptom-triage.json').then(r => r.json()),
+          fetch('data/vaccine-schedule.json').then(r => r.json())
+        ]);
+        TOXIC_FOODS = r1;
+        NUTRITION_GUIDELINES = r2;
+        SYMPTOM_TRIAGE = r3;
+        VACCINE_SCHEDULE = r4;
+        console.log('Reference datasets loaded successfully');
+        fetchBreedData('Dog');
+        fetchBreedData('Cat');
+      } catch (err) {
+        console.error('Failed to load reference datasets:', err);
+      }
+    }
+
+    async function fetchBreedData(species) {
+      if (species !== 'Dog' && species !== 'Cat') return [];
+      if (breedCache[species] && breedCache[species].length > 0) {
+        return breedCache[species];
+      }
+      try {
+        const url = species === 'Dog' 
+          ? 'https://api.thedogapi.com/v1/breeds' 
+          : 'https://api.thecatapi.com/v1/breeds';
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP status ${res.status}`);
+        const data = await res.json();
+        const simplified = data.map(b => ({
+          id: b.id,
+          name: b.name,
+          weight: b.weight ? b.weight.metric : '',
+          life_span: b.life_span || ''
+        }));
+        breedCache[species] = simplified;
+        localStorage.setItem(`cached${species}Breeds`, JSON.stringify(simplified));
+        return simplified;
+      } catch (err) {
+        console.error(`Failed to fetch breeds for ${species}:`, err);
+        return [];
+      }
+    }
+
+    function calculateFeedingAmount(pet) {
+      if (!pet || !pet.weight) return null;
+      const weight = parseFloat(pet.weight);
+      const species = (pet.type || '').toLowerCase();
+      const activity = (pet.activityLevel || 'moderate').toLowerCase();
+
+      let actKey = 'moderate';
+      if (activity.includes('sedentary')) actKey = 'sedentary';
+      else if (activity.includes('active') || activity.includes('high')) actKey = 'active';
+
+      const rer = 70 * Math.pow(weight, 0.75);
+
+      let factor = 1.0;
+      if (species === 'dog') {
+        factor = NUTRITION_GUIDELINES.formulas?.factors?.dog?.[actKey] || 1.6;
+      } else if (species === 'cat') {
+        factor = NUTRITION_GUIDELINES.formulas?.factors?.cat?.[actKey] || 1.2;
+      } else {
+        factor = 1.2;
+      }
+
+      const dailyCalories = Math.round(rer * factor);
+      const dryGrams = Math.round(dailyCalories / 3.5);
+      const wetGrams = Math.round(dailyCalories / 1.0);
+
+      let waterNeeds = Math.round(weight * 60);
+      if (species === 'cat') waterNeeds = Math.round(weight * 50);
+
+      return {
+        rer: Math.round(rer),
+        calories: dailyCalories,
+        dryGrams,
+        wetGrams,
+        waterNeeds,
+        disclaimer: "Disclaimer: This is a veterinary-formula baseline recommendation and does not substitute for customized professional veterinary care."
+      };
+    }
+
+    function getGroundingContext(message, species) {
+      if (!message) return '';
+      const text = message.toLowerCase();
+      const spec = (species || '').toLowerCase();
+      let context = '';
+
+      if (TOXIC_FOODS && TOXIC_FOODS.length > 0) {
+        const matches = TOXIC_FOODS.filter(item => {
+          const nameMatch = text.includes(item.name.toLowerCase());
+          const speciesMatch = !item.species_affected || 
+                               item.species_affected.toLowerCase().includes(spec) ||
+                               spec === '';
+          return nameMatch && speciesMatch;
+        });
+
+        if (matches.length > 0) {
+          context += `\n[Reference Data - Toxic Foods/Plants/Substances]:\n`;
+          matches.forEach(item => {
+            context += `- ${item.name} is toxic to ${item.species_affected}. Severity: ${item.severity}. Symptoms: ${item.symptoms}. Notes: ${item.notes}\n`;
+          });
+        }
+      }
+
+      if (SYMPTOM_TRIAGE && SYMPTOM_TRIAGE.length > 0) {
+        const matches = SYMPTOM_TRIAGE.filter(item => {
+          return text.includes(item.symptom.toLowerCase());
+        });
+
+        if (matches.length > 0) {
+          context += `\n[Reference Data - Symptom Triage Guidelines]:\n`;
+          matches.forEach(item => {
+            context += `- Symptom: ${item.symptom}. Urgency: ${item.urgency}. Trigger Criteria: ${item.trigger_criteria}. Home Care Tip: ${item.home_care_tip}\n`;
+          });
+        }
+      }
+
+      return context;
+    }
+
     const API_BASE_URL = 'https://pawfeedmobile.onrender.com';
     let currentUser = null;
     let pawCache = {
@@ -85,18 +218,30 @@
         ]);
 
         if (petsRes.data) {
-          pawCache.pets = petsRes.data.map(p => ({
-            id: p.id,
-            name: p.name,
-            type: p.species,
-            breed: p.breed,
-            age: parseFloat(p.age),
-            weight: parseFloat(p.weight),
-            foodPref: p.food_pref,
-            health: p.health,
-            waterGoal: parseFloat(p.water_goal),
-            activityLevel: p.activity_level
-          }));
+          pawCache.pets = petsRes.data.map(p => {
+            const petObj = {
+              id: p.id,
+              name: p.name,
+              type: p.species,
+              breed: p.breed,
+              age: parseFloat(p.age),
+              weight: parseFloat(p.weight),
+              foodPref: p.food_pref,
+              health: p.health,
+              waterGoal: parseFloat(p.water_goal),
+              activityLevel: p.activity_level
+            };
+            if ((p.species === 'Dog' || p.species === 'Cat') && breedCache[p.species]) {
+              const found = breedCache[p.species].find(b => b.name.toLowerCase() === p.breed.toLowerCase());
+              if (found) {
+                petObj.breedTraits = {
+                  weight: found.weight,
+                  life_span: found.life_span
+                };
+              }
+            }
+            return petObj;
+          });
         }
 
         if (logsRes.data) {
@@ -617,6 +762,7 @@
     });
 
     async function initApp() {
+      await loadReferenceDatasets();
       // Apply dark mode
       const s = getSettings();
       if (s.darkMode) {
@@ -922,8 +1068,9 @@
         const p = pets[idx];
         document.getElementById('mpetName').value = p.name;
         document.getElementById('mpetType').value = p.type;
-        loadModalBreeds();
-        setTimeout(() => document.getElementById('mpetBreed').value = p.breed, 50);
+        loadModalBreeds().then(() => {
+          document.getElementById('mpetBreed').value = p.breed || '';
+        });
         document.getElementById('mpetAge').value = p.age;
         document.getElementById('mpetWeight').value = p.weight;
         document.getElementById('mpetWaterGoal').value = p.waterGoal || 500;
@@ -942,7 +1089,9 @@
       } else {
         document.getElementById('mpetName').value = '';
         document.getElementById('mpetType').value = '';
-        document.getElementById('mpetBreed').innerHTML = '<option value="">Select breed</option>';
+        document.getElementById('mpetBreed').value = '';
+        const dl = document.getElementById('mpetBreedList');
+        if (dl) dl.innerHTML = '';
         document.getElementById('mpetAge').value = '';
         document.getElementById('mpetWeight').value = '';
         document.getElementById('mpetWaterGoal').value = 500;
@@ -986,15 +1135,31 @@
       el.classList.add('selected');
     }
 
-    function loadModalBreeds() {
+    async function loadModalBreeds() {
       const type = document.getElementById('mpetType').value;
-      const sel = document.getElementById('mpetBreed');
-      sel.innerHTML = '<option value="">Select breed</option>';
-      if (BREEDS[type]) BREEDS[type].forEach(b => {
-        const o = document.createElement('option');
-        o.textContent = b;
-        sel.appendChild(o);
-      });
+      const datalist = document.getElementById('mpetBreedList');
+      if (datalist) datalist.innerHTML = '';
+      const input = document.getElementById('mpetBreed');
+      if (input) input.value = '';
+
+      if (type === 'Dog' || type === 'Cat') {
+        const breeds = await fetchBreedData(type);
+        if (datalist && breeds.length > 0) {
+          breeds.forEach(b => {
+            const o = document.createElement('option');
+            o.value = b.name;
+            datalist.appendChild(o);
+          });
+        }
+      } else {
+        if (datalist && BREEDS[type]) {
+          BREEDS[type].forEach(b => {
+            const o = document.createElement('option');
+            o.value = b;
+            datalist.appendChild(o);
+          });
+        }
+      }
     }
 
     function savePetModal() {
@@ -1026,6 +1191,17 @@
 
       if (!pet.name || !pet.type || !pet.breed || !pet.age || !pet.weight) {
         showToast('Please complete all required fields'); return;
+      }
+
+      // Resolve breed traits
+      if ((pet.type === 'Dog' || pet.type === 'Cat') && breedCache[pet.type]) {
+        const found = breedCache[pet.type].find(b => b.name.toLowerCase() === pet.breed.toLowerCase());
+        if (found) {
+          pet.breedTraits = {
+            weight: found.weight,
+            life_span: found.life_span
+          };
+        }
       }
 
       const pets = getPets();
@@ -2243,7 +2419,22 @@
       const box = document.getElementById('careBox');
       if (noPet) {
         tabs.innerHTML = '';
-        box.innerHTML = `<div class="card success"><h3>🌿 General Pet Care</h3><div class="list-item"><span>💧</span><p>Always provide clean, fresh water.</p></div><div class="list-item"><span>🏥</span><p>Schedule annual vet checkups.</p></div><div class="list-item"><span>🧹</span><p>Keep living spaces clean.</p></div></div>`;
+        box.innerHTML = `
+          <div class="card success">
+            <h3>🌿 General Pet Care</h3>
+            <div class="list-item"><span>💧</span><p>Always provide clean, fresh water.</p></div>
+            <div class="list-item"><span>🏥</span><p>Schedule annual vet checkups.</p></div>
+            <div class="list-item"><span>🧹</span><p>Keep living spaces clean.</p></div>
+          </div>
+          <div class="card" style="margin-top:14px; background: var(--card); border: 1.5px solid var(--border)">
+            <h3 style="font-weight:900;color:var(--dark);margin-bottom:6px">🍎 Food Safety Quick Check</h3>
+            <p class="subtitle" style="margin-bottom:12px">Search for any food, plant, or substance to instantly check toxicity.</p>
+            <div class="chat-row" style="margin-bottom:10px">
+              <input id="foodSafetySearchInput" placeholder="Example: grapes, garlic, Lily..." style="margin-bottom:0; width: 100%; border-radius: 12px; padding: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text);" oninput="checkFoodSafetyLocal()" />
+            </div>
+            <div id="foodSafetySearchResult" style="font-size:13px;line-height:1.45;"></div>
+          </div>
+        `;
         return;
       }
       if (pets.length === 0) {
@@ -2268,7 +2459,63 @@
     <div class="card danger">
       <h3 style="font-weight:900;margin-bottom:8px">⚠️ Foods to Avoid for ${pet.name}</h3>
       ${unsafe.map(f => `<div class="list-item danger"><span>🚫</span><p><b>${f}</b></p></div>`).join('')}
+    </div>
+    <div class="card" style="margin-top:14px; background: var(--card); border: 1.5px solid var(--border)">
+      <h3 style="font-weight:900;color:var(--dark);margin-bottom:6px">🍎 Food Safety Quick Check</h3>
+      <p class="subtitle" style="margin-bottom:12px">Search for any food, plant, or substance to instantly check toxicity.</p>
+      <div class="chat-row" style="margin-bottom:10px">
+        <input id="foodSafetySearchInput" placeholder="Example: grapes, garlic, Lily..." style="margin-bottom:0; width: 100%; border-radius: 12px; padding: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text);" oninput="checkFoodSafetyLocal()" />
+      </div>
+      <div id="foodSafetySearchResult" style="font-size:13px;line-height:1.45;"></div>
     </div>`;
+    }
+
+    function checkFoodSafetyLocal() {
+      const q = document.getElementById('foodSafetySearchInput').value.trim().toLowerCase();
+      const resultBox = document.getElementById('foodSafetySearchResult');
+      if (!q) {
+        resultBox.innerHTML = '';
+        return;
+      }
+      if (!TOXIC_FOODS || TOXIC_FOODS.length === 0) {
+        resultBox.innerHTML = `<div style="color:var(--muted);font-style:italic">Loading toxic foods database...</div>`;
+        return;
+      }
+
+      const match = TOXIC_FOODS.find(f => f.name.toLowerCase().includes(q) || q.includes(f.name.toLowerCase()));
+
+      if (match) {
+        let color = '#ff4d4d';
+        let bg = 'rgba(255, 77, 77, 0.1)';
+        let label = '❌ TOXIC';
+        if (match.severity === 'moderate') {
+          color = '#ff9f43';
+          bg = 'rgba(255, 159, 67, 0.1)';
+          label = '⚠️ CAUTION (Moderate)';
+        } else if (match.severity === 'mild') {
+          color = '#ffcd38';
+          bg = 'rgba(255, 205, 56, 0.1)';
+          label = '⚠️ CAUTION (Mild)';
+        }
+
+        resultBox.innerHTML = `
+          <div style="background:${bg}; border-left: 4px solid ${color}; padding: 12px; border-radius: 8px; margin-top: 10px; color: var(--text)">
+            <b style="color:${color}; font-size: 14px;">${label}: ${match.name}</b>
+            <div style="margin-top: 6px; font-size:12px;"><b>Affected species:</b> ${match.species_affected}</div>
+            <div style="margin-top: 4px; font-size:12px;"><b>Symptoms:</b> ${match.symptoms}</div>
+            <div style="margin-top: 4px; font-size:12px; opacity: 0.9;"><b>Notes:</b> ${match.notes}</div>
+            <div style="margin-top: 8px; font-size:10px; color:var(--muted); font-style:italic">⚠️ Disclaimer: This is for informational purposes only. Consult a veterinarian immediately if you suspect poisoning.</div>
+          </div>
+        `;
+      } else {
+        resultBox.innerHTML = `
+          <div style="background:rgba(75, 181, 67, 0.1); border-left: 4px solid #4bb543; padding: 12px; border-radius: 8px; margin-top: 10px; color: var(--text)">
+            <b style="color:#4bb543; font-size: 14px;">✅ No Match Found</b>
+            <div style="margin-top: 6px; font-size:12px;">"${q}" is not listed in our database of common toxins. However, always exercise caution and introduce new foods in tiny portions.</div>
+            <div style="margin-top: 8px; font-size:10px; color:var(--muted); font-style:italic">⚠️ Disclaimer: Not a substitute for vet care. If your pet shows symptoms, contact a vet.</div>
+          </div>
+        `;
+      }
     }
 
     // ==================== HELPERS ====================
@@ -2450,9 +2697,20 @@
       let systemPrompt = `You are PawFeed AI, a friendly and knowledgeable pet care assistant. Give helpful, concise advice about pet feeding, nutrition, health, symptoms, and care. If the user describes any symptoms (e.g. vomiting, diarrhea, coughing, lethargy, skin problems), act as an AI symptom checker: analyze what it might indicate, advise on whether to see a vet urgently (adding ⚠️), soon, or just monitor at home, and provide one helpful home care tip. Keep responses under 130 words and conversational. Always be warm and encouraging.`;
       if (pet) {
         systemPrompt += ` The user's active pet is ${pet.name}, a ${pet.age}-year-old ${pet.breed} ${pet.type} weighing ${pet.weight}kg. Food preference: ${pet.foodPref}. Health notes: ${pet.health || 'healthy'}. Today's feedings logged: ${todayFed}. Current feeding streak: ${streak} days. Water goal: ${pet.waterGoal || 500}ml/day. Mood today: ${pet.moodToday || 'not logged'}. Reference this pet specifically when relevant.`;
+        if (pet.breedTraits) {
+          systemPrompt += ` Breed details: Typical weight range: ${pet.breedTraits.weight || 'unknown'}, Lifespan: ${pet.breedTraits.life_span || 'unknown'}.`;
+        }
+        const feedingCalc = calculateFeedingAmount(pet);
+        if (feedingCalc) {
+          systemPrompt += ` Calculated baseline nutrition needs: RER is ${feedingCalc.rer} kcal/day. Maintenance energy requirement is ${feedingCalc.calories} kcal/day (Recommended daily portions: ~${feedingCalc.dryGrams}g dry or ~${feedingCalc.wetGrams}g wet food). Recommended daily water intake is ${feedingCalc.waterNeeds}ml. Remember: always advise the user that these are baseline estimates and do not substitute for customized professional veterinary care.`;
+        }
       }
       if (pets.length > 1) {
         systemPrompt += ` They also have ${pets.length - 1} other pet(s): ${pets.filter((_, i) => i !== activeIdx).map(p => p.name + ' the ' + p.type).join(', ')}.`;
+      }
+      const grounding = getGroundingContext(text, pet?.type);
+      if (grounding) {
+        systemPrompt += `\nGrounding Reference Data:\n${grounding}`;
       }
 
       async function attemptFetch() {
@@ -3017,7 +3275,24 @@
       document.getElementById('shoppingListBox').innerHTML = `<div class="card"><h3 style="font-weight:900;color:var(--dark)">🛒 Smart Shopping List</h3>${items.map(i => `<span class="recipe-chip">${i}</span>`).join('')}</div>`;
     }
     function checkUnsafeIngredient() { const val = prompt('Enter ingredient to check:'); if (!val) return; const pets = getPets(), pet = pets[getActivePetIdx()] || { type: 'Dog' }; const unsafe = (UNSAFE[pet.type] || []).join(' ').toLowerCase(); const bad = unsafe.includes(val.toLowerCase()); showToast(bad ? 'Unsafe for ' + pet.type + ' ⚠️' : 'Looks safe in small quantity ✅'); }
-    function calculateMealAndWater() { const pet = getPets()[getActivePetIdx()] || { weight: 5, age: 2, name: 'Pet' }; const w = parseFloat(pet.weight || 5); document.getElementById('calcResultBox').innerHTML = `<div class="card"><h3 style="font-weight:900;color:var(--dark)">⚖️ Weight-Based Calculator</h3><div class="nutrition-grid"><div class="nutrition-box"><b>${Math.round(w * 28)}g</b><span>Meal</span></div><div class="nutrition-box"><b>${Math.round(w * 55)}ml</b><span>Water</span></div><div class="nutrition-box"><b>${Math.round(w * 70)}</b><span>Calories</span></div><div class="nutrition-box"><b>2-3</b><span>Meals/day</span></div></div></div>`; }
+    function calculateMealAndWater() {
+      const pet = getPets()[getActivePetIdx()] || { weight: 5, age: 2, name: 'Pet', type: 'Dog', activityLevel: 'Moderate' };
+      const calc = calculateFeedingAmount(pet);
+      if (!calc) return;
+      document.getElementById('calcResultBox').innerHTML = `
+        <div class="card">
+          <h3 style="font-weight:900;color:var(--dark)">⚖️ Formula-Based Nutrition Calculator</h3>
+          <p class="subtitle" style="margin-bottom:12px">Based on RER/MER veterinary feeding guidelines.</p>
+          <div class="nutrition-grid">
+            <div class="nutrition-box"><b>${calc.calories}</b><span>Daily Kcal</span></div>
+            <div class="nutrition-box"><b>~${calc.dryGrams}g</b><span>Dry Portion</span></div>
+            <div class="nutrition-box"><b>~${calc.wetGrams}g</b><span>Wet Portion</span></div>
+            <div class="nutrition-box"><b>${calc.waterNeeds}ml</b><span>Daily Water</span></div>
+          </div>
+          <p style="font-size:10px;color:var(--muted);margin-top:10px;line-height:1.3">${calc.disclaimer}</p>
+        </div>
+      `;
+    }
     function startFoodTimer() { let sec = 60; clearInterval(foodTimer); const box = document.getElementById('timerBox'); box.innerHTML = `<div class="card"><h3 style="font-weight:900;color:var(--dark)">⏲️ Food Preparation Timer</h3><div class="timer-circle" id="timerCircle">01:00</div><p class="subtitle" style="text-align:center;margin:0">Voice-guided cooking: prepare, cook, cool, then serve safely.</p></div>`; foodTimer = setInterval(() => { sec--; const c = document.getElementById('timerCircle'); if (c) { c.textContent = '00:' + String(sec).padStart(2, '0'); c.style.setProperty('--timer-progress', ((60 - sec) / 60 * 100) + '%') } if (sec <= 0) { clearInterval(foodTimer); showNotification('Homemade food timer finished. Let the food cool before serving.'); showToast('Timer finished ⏲️') } }, 1000); }
     async function askFoodAssistant() {
       const input = document.getElementById('foodAIInput');
@@ -3035,6 +3310,17 @@
       let systemPrompt = `You are PawFeed AI Food Assistant. You specialize in pet food recipes, safe ingredients, ingredient substitutions, meal planning, and nutrition. Give helpful, concise advice. Keep responses under 130 words.`;
       if (pet) {
         systemPrompt += ` The user's active pet is ${pet.name}, a ${pet.age}-year-old ${pet.breed} ${pet.type} weighing ${pet.weight}kg. Food preference: ${pet.foodPref}. Health notes: ${pet.health || 'healthy'}. Reference this pet specifically when relevant.`;
+        if (pet.breedTraits) {
+          systemPrompt += ` Breed details: Typical weight range: ${pet.breedTraits.weight || 'unknown'}, Lifespan: ${pet.breedTraits.life_span || 'unknown'}.`;
+        }
+        const feedingCalc = calculateFeedingAmount(pet);
+        if (feedingCalc) {
+          systemPrompt += ` Calculated baseline nutrition needs: RER is ${feedingCalc.rer} kcal/day. Maintenance energy requirement is ${feedingCalc.calories} kcal/day (Recommended portions: ~${feedingCalc.dryGrams}g dry or ~${feedingCalc.wetGrams}g wet food). Recommended water intake is ${feedingCalc.waterNeeds}ml/day. Remember: always advise the user that these are baseline estimates and do not substitute for customized professional veterinary care.`;
+        }
+      }
+      const grounding = getGroundingContext(q, pet?.type);
+      if (grounding) {
+        systemPrompt += `\nGrounding Reference Data:\n${grounding}`;
       }
 
       async function attemptFetch() {

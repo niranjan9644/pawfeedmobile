@@ -276,9 +276,8 @@
       </select>
 
       <label>Breed</label>
-      <select id="mpetBreed">
-        <option value="">Select breed</option>
-      </select>
+      <input id="mpetBreed" list="mpetBreedList" placeholder="Start typing breed..." style="margin-bottom:12px; width: 100%; border-radius: 12px; padding: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text);" />
+      <datalist id="mpetBreedList"></datalist>
 
       <label>Age (years)</label>
       <input id="mpetAge" type="number" placeholder="Age in years" min="0" max="30" step="0.5" />

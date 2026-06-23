@@ -1,0 +1,62 @@
+[
+  {
+    "symptom": "Vomiting",
+    "urgency": "urgent",
+    "trigger_criteria": "If repetitive (more than twice in 24 hours), contains blood (fresh red or dark coffee grounds), or is accompanied by lethargy.",
+    "home_care_tip": "Temporarily withhold food for 6-8 hours. Offer small, frequent sips of water. If settled, introduce a bland diet of boiled boneless chicken breast and plain white rice."
+  },
+  {
+    "symptom": "Diarrhea",
+    "urgency": "soon",
+    "trigger_criteria": "If it lasts more than 24 hours, contains dark or bright red blood, or the pet appears weak and dehydrated.",
+    "home_care_tip": "Keep the pet well-hydrated. Feed a bland diet (chicken and white rice) in small portions. Avoid dairy, fatty foods, and sudden changes in diet."
+  },
+  {
+    "symptom": "Lethargy",
+    "urgency": "soon",
+    "trigger_criteria": "If the pet is unusually tired, unresponsive to play, or refuses to stand/walk for more than 12-24 hours.",
+    "home_care_tip": "Provide a quiet, comfortable resting space. Monitor food and water intake, and keep track of other symptoms (fever, vomiting, pain) to share with the vet."
+  },
+  {
+    "symptom": "Coughing",
+    "urgency": "soon",
+    "trigger_criteria": "If persistent, sounds like a honking goose (coughing fits), or is accompanied by nasal discharge, fever, or lethargy.",
+    "home_care_tip": "Isolate your pet from other animals in case of infectious agents like kennel cough. Use a humidifier or bring the pet into a steamy bathroom to help soothe airways."
+  },
+  {
+    "symptom": "Limping / Lameness",
+    "urgency": "monitor",
+    "trigger_criteria": "Monitor if mild or improving; shift to urgent if the limb is dangling, swollen, non-weight bearing, or the pet cries out in pain.",
+    "home_care_tip": "Restrict your pet's activity immediately—no running, jumping, or climbing stairs. Examine the paw pad carefully for cuts, thorns, or debris."
+  },
+  {
+    "symptom": "Itching / Scratching",
+    "urgency": "monitor",
+    "trigger_criteria": "Monitor if mild/occasional; consult soon if skin is red, bleeding, losing hair, or has a strong odor.",
+    "home_care_tip": "Check for fleas or ticks using a flea comb. An oatmeal bath can temporarily soothe irritated skin; prevent licking or scratching at raw spots."
+  },
+  {
+    "symptom": "Loss of Appetite",
+    "urgency": "soon",
+    "trigger_criteria": "If the pet refuses food completely for over 24 hours (dogs) or over 12-24 hours (cats, as they risk fatty liver disease).",
+    "home_care_tip": "Try warming up wet food slightly to enhance its aroma. Offer plain boiled chicken or low-sodium chicken broth with no onions/garlic."
+  },
+  {
+    "symptom": "Runny Eyes / Nose",
+    "urgency": "soon",
+    "trigger_criteria": "If discharge is thick, yellow, or green, or if the eyes are squinting, red, or cloudy.",
+    "home_care_tip": "Gently wipe discharge away with a warm, damp cloth. Squinting indicates eye pain or corneal scratch and requires vet attention quickly."
+  },
+  {
+    "symptom": "Sneezing",
+    "urgency": "monitor",
+    "trigger_criteria": "Monitor if occasional; consult soon if persistent, accompanied by bleeding (nosebleed) or difficulty breathing.",
+    "home_care_tip": "Keep the air clear of irritants like perfumes, aerosols, household cleaners, and cigarette smoke. Use a saline nasal drop if recommended by a vet."
+  },
+  {
+    "symptom": "Hard Breathing / Panting",
+    "urgency": "urgent",
+    "trigger_criteria": "If breathing with an open mouth (cats), abdomen is expanding/contracting heavily, gums are blue/pale, or the pet is struggling for air.",
+    "home_care_tip": "Keep the pet calm and cool. Do not stress them, and transport them immediately to the nearest veterinary clinic. This is a life-threatening emergency."
+  }
+]
