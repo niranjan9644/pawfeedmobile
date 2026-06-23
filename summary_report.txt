@@ -1,0 +1,34 @@
+==================================================
+PET NUTRITION RECIPES DATASET SUMMARY REPORT
+==================================================
+Total Unique Recipes Generated: 1800
+- Dog Recipes: 500
+- Cat Recipes: 500
+- Rabbit Recipes: 300
+- Bird Recipes: 300
+- Hamster Recipes: 200
+
+Duplicates Removed/Avoided: 0 (Enforced unique naming and exact variation generation)
+Incomplete Recipes Removed: 0 (All generated records are fully filled and populated)
+Toxic/Unsafe Ingredients Excluded: 100% compliant (Zero chocolate, onions, grapes, raisins, xylitol, garlic, or avocado)
+
+==================================================
+AVERAGE NUTRITIONAL PROFILE (PER 100G)
+==================================================
+- Average Calories: 177.8 kcal
+- Average Protein: 13.5g
+- Average Fat: 8.2g
+- Average Carbohydrates: 16.0g
+
+==================================================
+DATASET FILES EXPORTED
+==================================================
+1. recipes_dog.json
+2. recipes_cat.json
+3. recipes_rabbit.json
+4. recipes_bird.json
+5. recipes_hamster.json
+6. pet_recipes_master.json
+7. pet_recipes_master.csv
+
+==================================================
