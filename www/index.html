@@ -276,8 +276,9 @@
       </select>
 
       <label>Breed</label>
-      <input id="mpetBreed" list="mpetBreedList" placeholder="Start typing breed..." style="margin-bottom:12px; width: 100%; border-radius: 12px; padding: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text);" />
-      <datalist id="mpetBreedList"></datalist>
+      <select id="mpetBreed">
+        <option value="">Select breed</option>
+      </select>
 
       <label>Age (years)</label>
       <input id="mpetAge" type="number" placeholder="Age in years" min="0" max="30" step="0.5" />
@@ -598,6 +599,17 @@
       <div id="careTab" class="screen tab-screen hidden">
         <h2 style="font-weight:900;color:var(--dark)">💧 Care & Safety</h2>
         <p class="subtitle">Daily care tips and unsafe food warnings.</p>
+
+        <!-- Food Safety Search widget -->
+        <div class="card" style="margin-bottom:16px;">
+          <h3 style="font-weight:900;margin-bottom:8px">🔍 Food Safety Checker</h3>
+          <p class="subtitle" style="margin-bottom:12px">Instant look-up for toxic or unsafe foods, plants, and substances.</p>
+          <div style="display:flex; gap:8px;">
+            <input id="foodSafetySearchInput" type="text" placeholder="Search (e.g. grapes, chocolate, garlic, apple)..." style="flex:1" oninput="searchFoodSafety()" />
+          </div>
+          <div id="foodSafetySearchResult" style="margin-top:14px; display:none;"></div>
+        </div>
+
         <div id="carePetTabs" class="pet-tabs"></div>
         <div id="careBox"></div>
       </div>
@@ -799,6 +811,12 @@
               step timer.</small></div>
         </div>
 
+        <!-- Meal Calculator Results -->
+        <div id="calcResultBox"></div>
+
+        <!-- Cooking Timer -->
+        <div id="timerBox"></div>
+
         <div id="homemadeDashboard"></div>
 
         <!-- Stock Tracker -->
@@ -915,13 +933,10 @@
       <!-- CARE PLANNER TAB -->
       <div id="careplannerTab" class="screen tab-screen hidden">
         <h2 style="font-weight:900;color:var(--dark)">🗓️ Care Planner</h2>
-        <p class="subtitle">Plan future care events and track completed daily checklist tasks.</p>
+        <p class="subtitle">Plan future care events and manage your pet's schedule.</p>
 
         <!-- Active Pet Selector -->
         <div id="plannerPetTabs" class="pet-tabs"></div>
-
-        <!-- Daily Care Checklist -->
-        <div id="dailyChecklistContainer"></div>
 
         <!-- Calendar Card -->
         <div class="card">

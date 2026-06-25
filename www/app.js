@@ -229,9 +229,10 @@
               foodPref: p.food_pref,
               health: p.health,
               waterGoal: parseFloat(p.water_goal),
-              activityLevel: p.activity_level
+              activityLevel: p.activity_level,
+              breedTraits: p.breed_traits || null
             };
-            if ((p.species === 'Dog' || p.species === 'Cat') && breedCache[p.species]) {
+            if (!petObj.breedTraits && (p.species === 'Dog' || p.species === 'Cat') && breedCache[p.species]) {
               const found = breedCache[p.species].find(b => b.name.toLowerCase() === p.breed.toLowerCase());
               if (found) {
                 petObj.breedTraits = {
@@ -651,7 +652,8 @@
             food_pref: p.foodPref || '',
             health: p.health || '',
             water_goal: parseFloat(p.waterGoal || 500),
-            activity_level: p.activityLevel || 'Moderate'
+            activity_level: p.activityLevel || 'Moderate',
+            breed_traits: p.breedTraits || null
           };
           if (p.id) payload.id = p.id;
           const { data, error } = await window.supabaseClient.from('pets').upsert(payload).select('id').single();
@@ -1089,9 +1091,7 @@
       } else {
         document.getElementById('mpetName').value = '';
         document.getElementById('mpetType').value = '';
-        document.getElementById('mpetBreed').value = '';
-        const dl = document.getElementById('mpetBreedList');
-        if (dl) dl.innerHTML = '';
+        document.getElementById('mpetBreed').innerHTML = '<option value="">Select breed</option>';
         document.getElementById('mpetAge').value = '';
         document.getElementById('mpetWeight').value = '';
         document.getElementById('mpetWaterGoal').value = 500;
@@ -1137,26 +1137,26 @@
 
     async function loadModalBreeds() {
       const type = document.getElementById('mpetType').value;
-      const datalist = document.getElementById('mpetBreedList');
-      if (datalist) datalist.innerHTML = '';
-      const input = document.getElementById('mpetBreed');
-      if (input) input.value = '';
+      const sel = document.getElementById('mpetBreed');
+      if (sel) sel.innerHTML = '<option value="">Select breed</option>';
 
       if (type === 'Dog' || type === 'Cat') {
         const breeds = await fetchBreedData(type);
-        if (datalist && breeds.length > 0) {
+        if (sel && breeds.length > 0) {
           breeds.forEach(b => {
             const o = document.createElement('option');
             o.value = b.name;
-            datalist.appendChild(o);
+            o.textContent = b.name;
+            sel.appendChild(o);
           });
         }
       } else {
-        if (datalist && BREEDS[type]) {
+        if (sel && BREEDS[type]) {
           BREEDS[type].forEach(b => {
             const o = document.createElement('option');
             o.value = b;
-            datalist.appendChild(o);
+            o.textContent = b;
+            sel.appendChild(o);
           });
         }
       }
@@ -2419,22 +2419,7 @@
       const box = document.getElementById('careBox');
       if (noPet) {
         tabs.innerHTML = '';
-        box.innerHTML = `
-          <div class="card success">
-            <h3>🌿 General Pet Care</h3>
-            <div class="list-item"><span>💧</span><p>Always provide clean, fresh water.</p></div>
-            <div class="list-item"><span>🏥</span><p>Schedule annual vet checkups.</p></div>
-            <div class="list-item"><span>🧹</span><p>Keep living spaces clean.</p></div>
-          </div>
-          <div class="card" style="margin-top:14px; background: var(--card); border: 1.5px solid var(--border)">
-            <h3 style="font-weight:900;color:var(--dark);margin-bottom:6px">🍎 Food Safety Quick Check</h3>
-            <p class="subtitle" style="margin-bottom:12px">Search for any food, plant, or substance to instantly check toxicity.</p>
-            <div class="chat-row" style="margin-bottom:10px">
-              <input id="foodSafetySearchInput" placeholder="Example: grapes, garlic, Lily..." style="margin-bottom:0; width: 100%; border-radius: 12px; padding: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text);" oninput="checkFoodSafetyLocal()" />
-            </div>
-            <div id="foodSafetySearchResult" style="font-size:13px;line-height:1.45;"></div>
-          </div>
-        `;
+        box.innerHTML = `<div class="card success"><h3>🌿 General Pet Care</h3><div class="list-item"><span>💧</span><p>Always provide clean, fresh water.</p></div><div class="list-item"><span>🏥</span><p>Schedule annual vet checkups.</p></div><div class="list-item"><span>🧹</span><p>Keep living spaces clean.</p></div></div>`;
         return;
       }
       if (pets.length === 0) {
@@ -2459,63 +2444,82 @@
     <div class="card danger">
       <h3 style="font-weight:900;margin-bottom:8px">⚠️ Foods to Avoid for ${pet.name}</h3>
       ${unsafe.map(f => `<div class="list-item danger"><span>🚫</span><p><b>${f}</b></p></div>`).join('')}
-    </div>
-    <div class="card" style="margin-top:14px; background: var(--card); border: 1.5px solid var(--border)">
-      <h3 style="font-weight:900;color:var(--dark);margin-bottom:6px">🍎 Food Safety Quick Check</h3>
-      <p class="subtitle" style="margin-bottom:12px">Search for any food, plant, or substance to instantly check toxicity.</p>
-      <div class="chat-row" style="margin-bottom:10px">
-        <input id="foodSafetySearchInput" placeholder="Example: grapes, garlic, Lily..." style="margin-bottom:0; width: 100%; border-radius: 12px; padding: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text);" oninput="checkFoodSafetyLocal()" />
-      </div>
-      <div id="foodSafetySearchResult" style="font-size:13px;line-height:1.45;"></div>
     </div>`;
     }
 
-    function checkFoodSafetyLocal() {
-      const q = document.getElementById('foodSafetySearchInput').value.trim().toLowerCase();
+    function searchFoodSafety() {
+      const input = document.getElementById('foodSafetySearchInput');
       const resultBox = document.getElementById('foodSafetySearchResult');
+      if (!input || !resultBox) return;
+
+      const q = input.value.trim().toLowerCase();
       if (!q) {
+        resultBox.style.display = 'none';
         resultBox.innerHTML = '';
         return;
       }
-      if (!TOXIC_FOODS || TOXIC_FOODS.length === 0) {
-        resultBox.innerHTML = `<div style="color:var(--muted);font-style:italic">Loading toxic foods database...</div>`;
+
+      resultBox.style.display = 'block';
+
+      // Find current pet to customize warning
+      const pets = getPets();
+      const activeIdx = getActivePetIdx();
+      const pet = pets[activeIdx];
+      const spec = pet ? pet.type.toLowerCase() : '';
+
+      // Search matching entries in TOXIC_FOODS
+      const matches = (TOXIC_FOODS || []).filter(item => 
+        item.name.toLowerCase().includes(q)
+      );
+
+      if (matches.length === 0) {
+        resultBox.innerHTML = `
+          <div class="card success" style="margin:0; padding:12px; border:1px solid #10b981; background:#f0fdf4;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:20px;">✅</span>
+              <div>
+                <b style="color:#047857">No specific toxic warning found</b>
+                <p style="margin:2px 0 0 0; font-size:12px; color:#065f46">We couldn't find a direct toxicity warning for "<b>${escapeHtml(input.value)}</b>" in our database. However, always proceed with caution, introduce new foods in tiny amounts, and monitor your pet. Consult your vet if you are unsure.</p>
+              </div>
+            </div>
+          </div>
+        `;
         return;
       }
 
-      const match = TOXIC_FOODS.find(f => f.name.toLowerCase().includes(q) || q.includes(f.name.toLowerCase()));
+      // Render matches
+      resultBox.innerHTML = matches.map(item => {
+        // Check if active pet species is affected
+        const isAffected = !item.species_affected || 
+                           item.species_affected.toLowerCase().includes(spec) ||
+                           spec === '';
+        
+        const severityColor = item.severity.toLowerCase() === 'severe' ? '#ef4444' : '#f59e0b';
+        const severityBg = item.severity.toLowerCase() === 'severe' ? '#fef2f2' : '#fffbeb';
+        const severityBorder = item.severity.toLowerCase() === 'severe' ? '#fee2e2' : '#fef3c7';
 
-      if (match) {
-        let color = '#ff4d4d';
-        let bg = 'rgba(255, 77, 77, 0.1)';
-        let label = '❌ TOXIC';
-        if (match.severity === 'moderate') {
-          color = '#ff9f43';
-          bg = 'rgba(255, 159, 67, 0.1)';
-          label = '⚠️ CAUTION (Moderate)';
-        } else if (match.severity === 'mild') {
-          color = '#ffcd38';
-          bg = 'rgba(255, 205, 56, 0.1)';
-          label = '⚠️ CAUTION (Mild)';
-        }
-
-        resultBox.innerHTML = `
-          <div style="background:${bg}; border-left: 4px solid ${color}; padding: 12px; border-radius: 8px; margin-top: 10px; color: var(--text)">
-            <b style="color:${color}; font-size: 14px;">${label}: ${match.name}</b>
-            <div style="margin-top: 6px; font-size:12px;"><b>Affected species:</b> ${match.species_affected}</div>
-            <div style="margin-top: 4px; font-size:12px;"><b>Symptoms:</b> ${match.symptoms}</div>
-            <div style="margin-top: 4px; font-size:12px; opacity: 0.9;"><b>Notes:</b> ${match.notes}</div>
-            <div style="margin-top: 8px; font-size:10px; color:var(--muted); font-style:italic">⚠️ Disclaimer: This is for informational purposes only. Consult a veterinarian immediately if you suspect poisoning.</div>
+        return `
+          <div class="card" style="margin:0 0 8px 0; padding:12px; border:1px solid ${isAffected ? severityColor : '#d1d5db'}; background: ${isAffected ? severityBg : '#f9fafb'};">
+            <div style="display:flex; justify-content:between; align-items:center; margin-bottom:6px;">
+              <span style="font-weight:900; font-size:16px; color:var(--dark)">${escapeHtml(item.name)}</span>
+              <span style="font-size:11px; font-weight:700; text-transform:uppercase; padding:2px 8px; border-radius:12px; background:${isAffected ? severityColor : '#6b7280'}; color:#fff; margin-left:auto;">
+                ${escapeHtml(item.severity)}
+              </span>
+            </div>
+            <p style="margin:4px 0; font-size:13px; line-height:1.4">
+              <b>Species Affected:</b> ${escapeHtml(item.species_affected)}
+              ${isAffected && pet ? ` <span style="color:#ef4444; font-weight:700;">(Affects ${pet.name}! ⚠️)</span>` : ''}
+            </p>
+            <p style="margin:4px 0; font-size:13px; line-height:1.4"><b>Symptoms:</b> ${escapeHtml(item.symptoms)}</p>
+            <p style="margin:4px 0; font-size:13px; line-height:1.4; color:#4b5563"><i><b>Notes:</b> ${escapeHtml(item.notes)}</i></p>
           </div>
         `;
-      } else {
-        resultBox.innerHTML = `
-          <div style="background:rgba(75, 181, 67, 0.1); border-left: 4px solid #4bb543; padding: 12px; border-radius: 8px; margin-top: 10px; color: var(--text)">
-            <b style="color:#4bb543; font-size: 14px;">✅ No Match Found</b>
-            <div style="margin-top: 6px; font-size:12px;">"${q}" is not listed in our database of common toxins. However, always exercise caution and introduce new foods in tiny portions.</div>
-            <div style="margin-top: 8px; font-size:10px; color:var(--muted); font-style:italic">⚠️ Disclaimer: Not a substitute for vet care. If your pet shows symptoms, contact a vet.</div>
-          </div>
-        `;
-      }
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
     // ==================== HELPERS ====================
@@ -2694,7 +2698,7 @@
       const todayFed = pet ? log.filter(e => e.petIdx === activeIdx && e.type === 'fed' && e.timestamp.slice(0, 10) === today).length : 0;
       const streak = calculateStreak();
 
-      let systemPrompt = `You are PawFeed AI, a friendly and knowledgeable pet care assistant. Give helpful, concise advice about pet feeding, nutrition, health, symptoms, and care. If the user describes any symptoms (e.g. vomiting, diarrhea, coughing, lethargy, skin problems), act as an AI symptom checker: analyze what it might indicate, advise on whether to see a vet urgently (adding ⚠️), soon, or just monitor at home, and provide one helpful home care tip. Keep responses under 130 words and conversational. Always be warm and encouraging.`;
+      let systemPrompt = `You are PawFeed AI, a friendly and knowledgeable pet care assistant. Give helpful, concise advice about pet feeding, nutrition, health, symptoms, and care. If the user describes any symptoms or food safety questions, prioritize the provided Grounding Reference Data to give accurate warnings and triage urgency (monitor, soon, or urgent ⚠️ with home care tips) and safety info. Keep responses under 130 words and conversational. Always be warm and encouraging.`;
       if (pet) {
         systemPrompt += ` The user's active pet is ${pet.name}, a ${pet.age}-year-old ${pet.breed} ${pet.type} weighing ${pet.weight}kg. Food preference: ${pet.foodPref}. Health notes: ${pet.health || 'healthy'}. Today's feedings logged: ${todayFed}. Current feeding streak: ${streak} days. Water goal: ${pet.waterGoal || 500}ml/day. Mood today: ${pet.moodToday || 'not logged'}. Reference this pet specifically when relevant.`;
         if (pet.breedTraits) {
@@ -3079,6 +3083,11 @@
     ];
     let activeRecipeId = null;
     let foodTimer = null;
+    let timerSecondsLeft = 0;
+    let timerTotalSeconds = 0;
+    let timerIsPaused = true;
+    let timerVoiceEnabled = true;
+    let timerCurrentStage = 'prep';
     let recipeLimit = 15;
 
     function getRecipeStore() {
@@ -3276,24 +3285,383 @@
     }
     function checkUnsafeIngredient() { const val = prompt('Enter ingredient to check:'); if (!val) return; const pets = getPets(), pet = pets[getActivePetIdx()] || { type: 'Dog' }; const unsafe = (UNSAFE[pet.type] || []).join(' ').toLowerCase(); const bad = unsafe.includes(val.toLowerCase()); showToast(bad ? 'Unsafe for ' + pet.type + ' ⚠️' : 'Looks safe in small quantity ✅'); }
     function calculateMealAndWater() {
-      const pet = getPets()[getActivePetIdx()] || { weight: 5, age: 2, name: 'Pet', type: 'Dog', activityLevel: 'Moderate' };
-      const calc = calculateFeedingAmount(pet);
-      if (!calc) return;
-      document.getElementById('calcResultBox').innerHTML = `
-        <div class="card">
-          <h3 style="font-weight:900;color:var(--dark)">⚖️ Formula-Based Nutrition Calculator</h3>
-          <p class="subtitle" style="margin-bottom:12px">Based on RER/MER veterinary feeding guidelines.</p>
-          <div class="nutrition-grid">
-            <div class="nutrition-box"><b>${calc.calories}</b><span>Daily Kcal</span></div>
-            <div class="nutrition-box"><b>~${calc.dryGrams}g</b><span>Dry Portion</span></div>
-            <div class="nutrition-box"><b>~${calc.wetGrams}g</b><span>Wet Portion</span></div>
-            <div class="nutrition-box"><b>${calc.waterNeeds}ml</b><span>Daily Water</span></div>
+      const calcBox = document.getElementById('calcResultBox');
+      if (!calcBox) return;
+
+      // If already open, clicking again toggles it off
+      if (calcBox.innerHTML && !calcBox.classList.contains('hidden-widget')) {
+        calcBox.innerHTML = '';
+        calcBox.classList.add('hidden-widget');
+        return;
+      }
+      calcBox.classList.remove('hidden-widget');
+
+      const pets = getPets();
+      const activeIdx = getActivePetIdx();
+      const activePet = pets[activeIdx] || { name: 'Custom Pet', type: 'Dog', weight: 10, activityLevel: 'Moderate' };
+
+      renderMealCalculatorCard(activePet);
+    }
+
+    window.renderMealCalculatorCard = function(pet) {
+      const calcBox = document.getElementById('calcResultBox');
+      if (!calcBox) return;
+
+      const name = pet.name || 'Pet';
+      const weight = pet.weight || 10;
+      const type = pet.type || 'Dog';
+      const activity = pet.activityLevel || 'Moderate';
+
+      // Default ratio is 50/50 mixed diet
+      const selectedRatio = window.calculatorDietRatio || 'mixed';
+      window.calculatorDietRatio = selectedRatio;
+
+      calcBox.innerHTML = `
+        <div class="calc-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h3 style="font-weight:900;color:var(--dark);margin:0">⚖️ Homemade Meal Calculator</h3>
+            <button onclick="document.getElementById('calcResultBox').innerHTML='';document.getElementById('calcResultBox').classList.add('hidden-widget');" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px">✕</button>
           </div>
-          <p style="font-size:10px;color:var(--muted);margin-top:10px;line-height:1.3">${calc.disclaimer}</p>
+          <p class="subtitle" style="margin-bottom:16px">Adjust parameters below to calculate feeding portion targets dynamically.</p>
+
+          <div class="calc-input-grid">
+            <div>
+              <label style="margin:0 0 4px 0">Pet Species</label>
+              <select id="calcPetType" onchange="updateMealCalculations()">
+                <option value="Dog" ${type === 'Dog' ? 'selected' : ''}>Dog</option>
+                <option value="Cat" ${type === 'Cat' ? 'selected' : ''}>Cat</option>
+              </select>
+            </div>
+            <div>
+              <label style="margin:0 0 4px 0">Activity Level</label>
+              <select id="calcPetActivity" onchange="updateMealCalculations()">
+                <option value="Sedentary" ${activity === 'Sedentary' ? 'selected' : ''}>Sedentary</option>
+                <option value="Moderate" ${activity === 'Moderate' ? 'selected' : ''}>Moderate</option>
+                <option value="Active" ${activity === 'Active' ? 'selected' : ''}>Active / High</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <label style="margin:0">Weight (kg)</label>
+              <b id="calcWeightVal" style="color:var(--dark)">${weight} kg</b>
+            </div>
+            <input type="range" id="calcPetWeight" min="0.5" max="80" step="0.5" value="${weight}" oninput="updateMealCalculations()" style="width:100%;accent-color:var(--orange);margin:0;padding:0;height:8px;" />
+          </div>
+
+          <label style="margin:0 0 4px 0">Diet Plan Ratio</label>
+          <div class="calc-ratio-picker">
+            <div class="ratio-btn ${selectedRatio === 'dry' ? 'active' : ''}" id="ratioDry" onclick="selectCalcDietRatio('dry')">100% Dry Food</div>
+            <div class="ratio-btn ${selectedRatio === 'mixed' ? 'active' : ''}" id="ratioMixed" onclick="selectCalcDietRatio('mixed')">50/50 Mixed Diet</div>
+            <div class="ratio-btn ${selectedRatio === 'wet' ? 'active' : ''}" id="ratioWet" onclick="selectCalcDietRatio('wet')">100% Wet Food</div>
+          </div>
+
+          <div id="calcOutputsContainer"></div>
         </div>
       `;
+
+      updateMealCalculations();
     }
-    function startFoodTimer() { let sec = 60; clearInterval(foodTimer); const box = document.getElementById('timerBox'); box.innerHTML = `<div class="card"><h3 style="font-weight:900;color:var(--dark)">⏲️ Food Preparation Timer</h3><div class="timer-circle" id="timerCircle">01:00</div><p class="subtitle" style="text-align:center;margin:0">Voice-guided cooking: prepare, cook, cool, then serve safely.</p></div>`; foodTimer = setInterval(() => { sec--; const c = document.getElementById('timerCircle'); if (c) { c.textContent = '00:' + String(sec).padStart(2, '0'); c.style.setProperty('--timer-progress', ((60 - sec) / 60 * 100) + '%') } if (sec <= 0) { clearInterval(foodTimer); showNotification('Homemade food timer finished. Let the food cool before serving.'); showToast('Timer finished ⏲️') } }, 1000); }
+
+    window.selectCalcDietRatio = function(ratio) {
+      window.calculatorDietRatio = ratio;
+      document.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
+      if (ratio === 'dry') document.getElementById('ratioDry').classList.add('active');
+      if (ratio === 'mixed') document.getElementById('ratioMixed').classList.add('active');
+      if (ratio === 'wet') document.getElementById('ratioWet').classList.add('active');
+      updateMealCalculations();
+    }
+
+    window.updateMealCalculations = function() {
+      const typeSelect = document.getElementById('calcPetType');
+      const actSelect = document.getElementById('calcPetActivity');
+      const weightSlider = document.getElementById('calcPetWeight');
+      const weightLabel = document.getElementById('calcWeightVal');
+
+      if (!typeSelect || !actSelect || !weightSlider) return;
+
+      const type = typeSelect.value;
+      const activity = actSelect.value;
+      const weight = parseFloat(weightSlider.value);
+      if (weightLabel) weightLabel.textContent = weight + ' kg';
+
+      // Re-run formula calculations
+      const petMock = { type, activityLevel: activity, weight };
+      const calc = calculateFeedingAmount(petMock);
+      if (!calc) return;
+
+      const ratio = window.calculatorDietRatio || 'mixed';
+      let foodBreakdownHTML = '';
+
+      if (ratio === 'dry') {
+        foodBreakdownHTML = `
+          <div class="calc-box" style="grid-column: span 2">
+            <b>~${calc.dryGrams}g</b>
+            <span>Recommended Dry Food / Day</span>
+          </div>
+        `;
+      } else if (ratio === 'wet') {
+        foodBreakdownHTML = `
+          <div class="calc-box" style="grid-column: span 2">
+            <b>~${calc.wetGrams}g</b>
+            <span>Recommended Wet Food / Day</span>
+          </div>
+        `;
+      } else {
+        const dryHalf = Math.round(calc.dryGrams / 2);
+        const wetHalf = Math.round(calc.wetGrams / 2);
+        foodBreakdownHTML = `
+          <div class="calc-box">
+            <b>~${dryHalf}g</b>
+            <span>Dry Food Portion</span>
+          </div>
+          <div class="calc-box">
+            <b>~${wetHalf}g</b>
+            <span>Wet Food Portion</span>
+          </div>
+        `;
+      }
+
+      document.getElementById('calcOutputsContainer').innerHTML = `
+        <div class="calc-results-grid">
+          <div class="calc-box">
+            <b>${calc.calories} kcal</b>
+            <span>Daily Caloric Goal</span>
+          </div>
+          <div class="calc-box">
+            <b>${calc.waterNeeds} ml</b>
+            <span>Daily Water Needs</span>
+          </div>
+          ${foodBreakdownHTML}
+        </div>
+        <p class="calc-disclaimer">${calc.disclaimer}</p>
+      `;
+    }
+
+    // Voice announcer helper
+    function announceTimerStage(text) {
+      if (!timerVoiceEnabled) return;
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 1.0;
+        window.speechSynthesis.speak(u);
+      } catch (e) {
+        console.error("Speech synthesis failed:", e);
+      }
+    }
+
+    function startFoodTimer() {
+      const timerBox = document.getElementById('timerBox');
+      if (!timerBox) return;
+
+      // If already open, clicking again toggles it off
+      if (timerBox.innerHTML && !timerBox.classList.contains('hidden-widget')) {
+        clearInterval(foodTimer);
+        timerBox.innerHTML = '';
+        timerBox.classList.add('hidden-widget');
+        return;
+      }
+      timerBox.classList.remove('hidden-widget');
+
+      renderTimerCard();
+    }
+
+    window.renderTimerCard = function() {
+      const timerBox = document.getElementById('timerBox');
+      if (!timerBox) return;
+
+      timerBox.innerHTML = `
+        <div class="timer-card">
+          <div class="timer-header">
+            <h3 style="font-weight:900;color:var(--dark);margin:0">⏲️ Cooking & Prep Timer</h3>
+            <div style="display:flex;align-items:center;gap:10px">
+              <label style="margin:0;cursor:pointer;font-size:12px;font-weight:800;color:var(--muted);display:flex;align-items:center;gap:4px">
+                <input type="checkbox" id="voiceToggle" ${timerVoiceEnabled ? 'checked' : ''} onchange="toggleTimerVoice()" style="width:14px;height:14px;vertical-align:middle;margin:0" />Voice
+              </label>
+              <button onclick="closeCookingTimer()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px">✕</button>
+            </div>
+          </div>
+
+          <div class="stage-selector">
+            <div class="stage-chip ${timerCurrentStage === 'prep' ? 'active' : ''}" id="chipPrep" onclick="setTimerStage('prep', 180)">1. Prep / Chop (3m)</div>
+            <div class="stage-chip ${timerCurrentStage === 'cook' ? 'active' : ''}" id="chipCook" onclick="setTimerStage('cook', 900)">2. Simmer / Cook (15m)</div>
+            <div class="stage-chip ${timerCurrentStage === 'cool' ? 'active' : ''}" id="chipCool" onclick="setTimerStage('cool', 600)">3. Cool Down (10m)</div>
+            <div class="stage-chip ${timerCurrentStage === 'custom' ? 'active' : ''}" id="chipCustom" onclick="promptCustomTimer()">4. Custom Time</div>
+          </div>
+
+          <div class="timer-circle-wrap">
+            <div class="timer-display" id="timerValueDisplay">03:00</div>
+          </div>
+
+          <div class="timer-progress-bar-wrap">
+            <div class="timer-progress-bar" id="timerProgressBar" style="width: 100%"></div>
+          </div>
+
+          <div class="timer-controls">
+            <button class="timer-btn timer-btn-primary" id="timerPlayPauseBtn" onclick="toggleTimerPlay()">Start</button>
+            <button class="timer-btn timer-btn-secondary" onclick="resetTimerStage()">Reset</button>
+          </div>
+        </div>
+      `;
+
+      // Set initial state
+      if (timerSecondsLeft <= 0) {
+        setTimerStage('prep', 180);
+      } else {
+        updateTimerDisplay();
+      }
+    }
+
+    window.toggleTimerVoice = function() {
+      const chk = document.getElementById('voiceToggle');
+      if (chk) timerVoiceEnabled = chk.checked;
+    }
+
+    window.closeCookingTimer = function() {
+      clearInterval(foodTimer);
+      timerIsPaused = true;
+      const timerBox = document.getElementById('timerBox');
+      if (timerBox) {
+        timerBox.innerHTML = '';
+        timerBox.classList.add('hidden-widget');
+      }
+    }
+
+    window.setTimerStage = function(stage, seconds) {
+      clearInterval(foodTimer);
+      timerIsPaused = true;
+      timerCurrentStage = stage;
+      timerTotalSeconds = seconds;
+      timerSecondsLeft = seconds;
+
+      document.querySelectorAll('.stage-chip').forEach(c => c.classList.remove('active'));
+      if (stage === 'prep') document.getElementById('chipPrep').classList.add('active');
+      if (stage === 'cook') document.getElementById('chipCook').classList.add('active');
+      if (stage === 'cool') document.getElementById('chipCool').classList.add('active');
+      if (stage === 'custom') document.getElementById('chipCustom').classList.add('active');
+
+      const playBtn = document.getElementById('timerPlayPauseBtn');
+      if (playBtn) {
+        playBtn.textContent = 'Start';
+        playBtn.classList.remove('timer-btn-danger');
+        playBtn.classList.add('timer-btn-primary');
+      }
+
+      updateTimerDisplay();
+    }
+
+    window.promptCustomTimer = function() {
+      const minStr = prompt("Enter custom timer duration in minutes:", "5");
+      if (!minStr) return;
+      const min = parseInt(minStr);
+      if (isNaN(min) || min <= 0) {
+        showToast("Invalid duration!");
+        return;
+      }
+      setTimerStage('custom', min * 60);
+    }
+
+    window.updateTimerDisplay = function() {
+      const val = document.getElementById('timerValueDisplay');
+      const progress = document.getElementById('timerProgressBar');
+
+      if (!val) return;
+
+      const m = Math.floor(timerSecondsLeft / 60);
+      const s = timerSecondsLeft % 60;
+      val.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+      if (progress && timerTotalSeconds > 0) {
+        const pct = (timerSecondsLeft / timerTotalSeconds) * 100;
+        progress.style.width = pct + '%';
+      }
+    }
+
+    window.toggleTimerPlay = function() {
+      const btn = document.getElementById('timerPlayPauseBtn');
+      if (!btn) return;
+
+      if (timerIsPaused) {
+        // Start/Resume
+        timerIsPaused = false;
+        btn.textContent = 'Pause';
+        btn.classList.add('timer-btn-danger');
+        btn.classList.remove('timer-btn-primary');
+
+        // Announce stage starting
+        if (timerSecondsLeft === timerTotalSeconds) {
+          if (timerCurrentStage === 'prep') {
+            announceTimerStage("Preparation timer started. Please chop and wash your ingredients. Make sure they are pet-friendly, like carrots and pumpkin.");
+          } else if (timerCurrentStage === 'cook') {
+            announceTimerStage("Cooking timer started. Simmer the food on low heat without spices, salt, or oil.");
+          } else if (timerCurrentStage === 'cool') {
+            announceTimerStage("Cooling timer started. Let the food cool down completely before serving to prevent burns.");
+          } else {
+            announceTimerStage("Custom cooking timer started.");
+          }
+        } else {
+          announceTimerStage("Timer resumed.");
+        }
+
+        foodTimer = setInterval(() => {
+          if (timerSecondsLeft > 0) {
+            timerSecondsLeft--;
+            updateTimerDisplay();
+
+            // Give a 1-minute warning
+            if (timerSecondsLeft === 60) {
+              announceTimerStage("One minute left.");
+            }
+          } else {
+            clearInterval(foodTimer);
+            timerIsPaused = true;
+            btn.textContent = 'Start';
+            btn.classList.remove('timer-btn-danger');
+            btn.classList.add('timer-btn-primary');
+
+            // Complete announcements
+            if (timerCurrentStage === 'prep') {
+              announceTimerStage("Preparation finished. You are ready to start cooking!");
+            } else if (timerCurrentStage === 'cook') {
+              announceTimerStage("Cooking finished. Remember to cool the food down before serving.");
+            } else if (timerCurrentStage === 'cool') {
+              announceTimerStage("Cooling finished. The food is now safe to serve to your pets.");
+            } else {
+              announceTimerStage("Custom timer finished.");
+            }
+
+            showNotification('Homemade food timer finished.');
+            showToast('Timer finished! ⏲️');
+          }
+        }, 1000);
+      } else {
+        // Pause
+        timerIsPaused = true;
+        btn.textContent = 'Resume';
+        btn.classList.remove('timer-btn-danger');
+        btn.classList.add('timer-btn-primary');
+        clearInterval(foodTimer);
+        announceTimerStage("Timer paused.");
+      }
+    }
+
+    window.resetTimerStage = function() {
+      clearInterval(foodTimer);
+      timerIsPaused = true;
+      timerSecondsLeft = timerTotalSeconds;
+
+      const btn = document.getElementById('timerPlayPauseBtn');
+      if (btn) {
+        btn.textContent = 'Start';
+        btn.classList.remove('timer-btn-danger');
+        btn.classList.add('timer-btn-primary');
+      }
+
+      updateTimerDisplay();
+      announceTimerStage("Timer reset.");
+    }
     async function askFoodAssistant() {
       const input = document.getElementById('foodAIInput');
       const q = input.value.trim();
@@ -3307,7 +3675,7 @@
       const activeIdx = getActivePetIdx();
       const pet = pets[activeIdx];
 
-      let systemPrompt = `You are PawFeed AI Food Assistant. You specialize in pet food recipes, safe ingredients, ingredient substitutions, meal planning, and nutrition. Give helpful, concise advice. Keep responses under 130 words.`;
+      let systemPrompt = `You are PawFeed AI Food Assistant. You specialize in pet food recipes, safe ingredients, ingredient substitutions, meal planning, and nutrition. Leverage the Grounding Reference Data provided to warn about any toxic ingredients or highlight safe guidelines. Give helpful, concise advice. Keep responses under 130 words.`;
       if (pet) {
         systemPrompt += ` The user's active pet is ${pet.name}, a ${pet.age}-year-old ${pet.breed} ${pet.type} weighing ${pet.weight}kg. Food preference: ${pet.foodPref}. Health notes: ${pet.health || 'healthy'}. Reference this pet specifically when relevant.`;
         if (pet.breedTraits) {
@@ -3804,9 +4172,16 @@
       const sleep7 = sleepLog.filter(s => s.petIdx === idx && days7.includes(s.date)).map(s => `${s.hours}h(${s.quality})`).join(', ') || 'not logged';
       const weight = pet?.weight ? pet.weight + 'kg' : 'not logged';
 
+      const feedingCalc = pet ? calculateFeedingAmount(pet) : null;
+      let feedingGuide = '';
+      if (feedingCalc) {
+        feedingGuide = `Daily caloric target: ${feedingCalc.calories} kcal/day (recommended daily portions: ~${feedingCalc.dryGrams}g dry or ~${feedingCalc.wetGrams}g wet food). Recommended daily water: ${feedingCalc.waterNeeds}ml.`;
+      }
+
       const promptText = `You are PawFeed AI generating a friendly weekly health summary.
 
 Pet: ${pet ? `${pet.name}, ${pet.age}yr ${pet.breed} ${pet.type}, ${weight}` : 'Unknown'}
+Nutritional Target Guidelines: ${feedingGuide || 'none'}
 
 Last 7 days:
 Feedings logged: ${fedCount}
@@ -3815,7 +4190,7 @@ Sleep: ${sleep7}
 
 Write:
 1. Overall assessment
-2. Feeding summary
+2. Feeding summary (compare actual feedings logged with the target guidelines above)
 3. Mood trend
 4. Sleep notes
 5. One actionable tip
@@ -21625,56 +22000,9 @@ Use emojis and keep under 150 words.`;
 
     function renderDailyChecklist() {
       const container = document.getElementById('dailyChecklistContainer');
-      if (!container) return;
-      const data = getDailyChecklist();
-      const pets = getPets();
-      const noPet = isNoPet();
-      const activeIdx = getActivePetIdx();
-      const activePet = pets[activeIdx];
-
-      let petName = activePet ? activePet.name : 'Pet';
-
-      let html = `
-        <div class="card" id="dailyChecklistCard" style="margin-top: 14px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
-            <div>
-              <h3 style="font-weight:900; margin:0">📋 Daily Checklist (${petName})</h3>
-              <small style="color:var(--muted); font-size:11px">Tick box list • Resets daily</small>
-            </div>
-            <button class="small-btn" onclick="resetDailyChecklist(true)" style="font-size:12px; padding:6px 12px; border-radius:10px">Reset</button>
-          </div>
-          <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:14px">
-      `;
-
-      if (data.items.length === 0) {
-        html += `<p style="font-size:13px; color:var(--muted); text-align:center; padding:10px 0">No checklist items. Add one below!</p>`;
-      } else {
-        html += data.items.map((item, idx) => {
-          return `
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:var(--bg); border:1px solid var(--border); border-radius:14px;">
-              <label style="display:flex; align-items:center; gap:10px; margin:0; text-transform:none; font-size:14px; font-weight:700; color:var(--text); cursor:pointer; flex:1">
-                <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleDailyChecklistItem(${idx})" style="width:20px; height:20px; cursor:pointer; accent-color:var(--orange)">
-                <span style="${item.checked ? 'text-decoration: line-through; color: var(--muted); font-weight:500' : ''}">${item.text}</span>
-              </label>
-              ${item.isCustom ? `<button onclick="deleteChecklistItem(${idx})" style="background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer; padding:2px 6px">✕</button>` : ''}
-            </div>
-          `;
-        }).join('');
+      if (container) {
+        container.innerHTML = '';
       }
-
-      html += `
-          </div>
-          <div style="display:flex; gap:8px; margin-top:10px">
-            <input type="text" id="newChecklistItem" placeholder="Add custom chore (e.g. Brush teeth)" style="flex:1; margin:0; padding:10px 14px; font-size:13px; border-radius:12px; border:1px solid var(--border); background:var(--bg); color:var(--text)" onkeydown="if(event.key==='Enter') addChecklistItem()">
-            <button class="primary-btn" onclick="addChecklistItem()" style="width:auto; margin:0; padding:10px 16px; border-radius:12px; font-size:16px; font-weight:900">+</button>
-          </div>
-          <div class="toggle-wrap" style="margin-top:14px; padding:6px 0; border-top:1px dashed var(--border)">
-            <span class="toggle-label" style="font-size:12px; color:var(--muted)">🔄 Auto-reset checklist daily</span>
-            <button class="toggle-switch ${data.autoReset ? 'on' : ''}" id="checklistAutoResetToggle" onclick="toggleChecklistAutoReset()"></button>
-          </div>
-        </div>
-      `;
-      container.innerHTML = html;
     }
 
     // ==================== HEALTH INSIGHTS ====================

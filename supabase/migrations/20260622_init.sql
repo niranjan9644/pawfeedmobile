@@ -27,6 +27,7 @@ CREATE TABLE pets (
   health TEXT,
   water_goal NUMERIC DEFAULT 500,
   activity_level TEXT DEFAULT 'Moderate',
+  breed_traits JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 

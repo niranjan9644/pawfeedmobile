@@ -5,6 +5,14 @@ for Capacitor packaging. Zero logic changes; only relocates code.
 """
 
 import os
+import sys
+
+print("WARNING: This script is deprecated. Active development has moved to the 'www/' directory.")
+print("Running this script will OVERWRITE all changes made directly in 'www/index.html', 'www/app.js', and 'www/styles.css'.")
+choice = input("Are you absolutely sure you want to run this? (y/N): ")
+if choice.lower() != 'y':
+    print("Aborting to protect active files.")
+    sys.exit(1)
 
 SRC = "pawfeed00.html"
 WWW = "www"
