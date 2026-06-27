@@ -1116,6 +1116,13 @@
           <label>Health Benefits / Vet Tips</label>
           <input id="formRecipeVetTip" type="text" placeholder="e.g. Rich in Omega-3 fatty acids" />
 
+          <label>Recipe Image</label>
+          <input id="formRecipeImageFile" type="file" accept="image/*" onchange="handleRecipeImageUpload(event)" style="padding:8px" />
+          <input id="formRecipeImage" type="hidden" />
+          <div id="formRecipeImagePreview" style="margin-top:8px; display:none;">
+            <img id="formRecipeImagePreviewImg" src="" style="max-height:100px; border-radius:12px; object-fit:cover" />
+          </div>
+
           <div style="display:flex;align-items:center;gap:8px;margin:12px 0">
             <input id="formRecipeVetApproved" type="checkbox" style="width:auto;margin:0" />
             <label for="formRecipeVetApproved" style="margin:0;cursor:pointer">🩺 Mark as Vet Approved</label>

@@ -3072,14 +3072,14 @@
 
     // ==================== HOMEMADE FOOD PRO PAGE ====================
     const HOME_RECIPES = [
-      { id: 'r1', title: 'Chicken Rice Comfort Bowl', pet: ['Dog', 'Cat'], type: 'Non-Veg', cat: 'Meal', time: 25, diff: 'Easy', cal: 340, protein: 32, fiber: 4, vit: 70, vet: true, budget: true, season: 'All season', ingredients: ['boiled chicken', 'rice', 'carrot', 'pumpkin'], steps: ['Boil chicken without salt, onion, garlic, or spices.', 'Cook rice until soft and easy to digest.', 'Steam carrot and pumpkin until tender.', 'Mix all ingredients, cool fully, and serve in measured portions.'] },
-      { id: 'r2', title: 'Pumpkin Oats Digestive Meal', pet: ['Dog'], type: 'Veg', cat: 'Allergy', time: 18, diff: 'Easy', cal: 250, protein: 12, fiber: 8, vit: 82, vet: true, budget: true, season: 'Monsoon digestion', ingredients: ['pumpkin', 'oats', 'curd small amount', 'carrot'], steps: ['Cook oats in plain water.', 'Steam pumpkin and carrot.', 'Mix with a small spoon of plain curd if tolerated.', 'Serve fresh and store leftovers safely.'] },
-      { id: 'r3', title: 'Fish Flake Protein Plate', pet: ['Cat', 'Fish'], type: 'Non-Veg', cat: 'Meal', time: 20, diff: 'Medium', cal: 290, protein: 36, fiber: 2, vit: 64, vet: true, budget: false, season: 'Winter protein', ingredients: ['boneless fish', 'rice water', 'peas small amount'], steps: ['Steam boneless fish fully.', 'Remove bones carefully.', 'Add a tiny amount of mashed peas for cats only.', 'Cool before serving. For aquarium fish, use tiny flakes only.'] },
-      { id: 'r4', title: 'Rabbit Leafy Safe Bowl', pet: ['Rabbit'], type: 'Veg', cat: 'Meal', time: 8, diff: 'Easy', cal: 110, protein: 6, fiber: 14, vit: 88, vet: true, budget: true, season: 'Summer fresh', ingredients: ['romaine lettuce', 'coriander', 'carrot small amount', 'hay'], steps: ['Wash leaves well.', 'Chop into small pieces.', 'Add only a small carrot portion.', 'Serve with unlimited hay and clean water.'] },
-      { id: 'r5', title: 'Bird Seed Fruit Treat', pet: ['Bird'], type: 'Veg', cat: 'Snack', time: 10, diff: 'Easy', cal: 95, protein: 7, fiber: 5, vit: 76, vet: false, budget: true, season: 'Summer treat', ingredients: ['millet', 'apple without seeds', 'carrot', 'boiled corn small amount'], steps: ['Remove all apple seeds.', 'Chop fruit and carrot very small.', 'Mix with millet.', 'Serve as a small treat, not full meal.'] },
-      { id: 'r6', title: 'Emergency Egg Rice Mini Meal', pet: ['Dog', 'Cat'], type: 'Non-Veg', cat: 'Quick', time: 12, diff: 'Easy', cal: 220, protein: 18, fiber: 2, vit: 55, vet: false, budget: true, season: 'Emergency', ingredients: ['boiled egg', 'rice', 'water'], steps: ['Boil egg completely.', 'Cook soft rice.', 'Mash together with warm water.', 'Serve only as a quick temporary meal.'] },
-      { id: 'r7', title: 'Budget Veg Protein Mix', pet: ['Dog'], type: 'Veg', cat: 'Budget', time: 22, diff: 'Easy', cal: 260, protein: 15, fiber: 7, vit: 69, vet: false, budget: true, season: 'Budget friendly', ingredients: ['rice', 'lentil water', 'pumpkin', 'beans small amount'], steps: ['Cook rice softly.', 'Use cooked lentil water, not spicy dal.', 'Steam pumpkin and beans.', 'Mix, cool, and serve in small portions.'] },
-      { id: 'r8', title: 'Frozen Hydration Snack', pet: ['Dog'], type: 'Veg', cat: 'Seasonal', time: 5, diff: 'Easy', cal: 60, protein: 3, fiber: 3, vit: 60, vet: true, budget: true, season: 'Hot summer', ingredients: ['watermelon seedless', 'curd', 'water'], steps: ['Use seedless watermelon only.', 'Blend with plain curd and water.', 'Freeze in small cubes.', 'Give as an occasional cooling treat.'] }
+      { id: 'r1', title: 'Chicken Rice Comfort Bowl', pet: ['Dog', 'Cat'], type: 'Non-Veg', cat: 'Meal', time: 25, diff: 'Easy', cal: 340, protein: 32, fiber: 4, vit: 70, vet: true, budget: true, season: 'All season', image: 'images/r1.png', ingredients: ['boiled chicken', 'rice', 'carrot', 'pumpkin'], steps: ['Boil chicken without salt, onion, garlic, or spices.', 'Cook rice until soft and easy to digest.', 'Steam carrot and pumpkin until tender.', 'Mix all ingredients, cool fully, and serve in measured portions.'] },
+      { id: 'r2', title: 'Pumpkin Oats Digestive Meal', pet: ['Dog'], type: 'Veg', cat: 'Allergy', time: 18, diff: 'Easy', cal: 250, protein: 12, fiber: 8, vit: 82, vet: true, budget: true, season: 'Monsoon digestion', image: 'images/r2.png', ingredients: ['pumpkin', 'oats', 'curd small amount', 'carrot'], steps: ['Cook oats in plain water.', 'Steam pumpkin and carrot.', 'Mix with a small spoon of plain curd if tolerated.', 'Serve fresh and store leftovers safely.'] },
+      { id: 'r3', title: 'Fish Flake Protein Plate', pet: ['Cat', 'Fish'], type: 'Non-Veg', cat: 'Meal', time: 20, diff: 'Medium', cal: 290, protein: 36, fiber: 2, vit: 64, vet: true, budget: false, season: 'Winter protein', image: 'images/r3.png', ingredients: ['boneless fish', 'rice water', 'peas small amount'], steps: ['Steam boneless fish fully.', 'Remove bones carefully.', 'Add a tiny amount of mashed peas for cats only.', 'Cool before serving. For aquarium fish, use tiny flakes only.'] },
+      { id: 'r4', title: 'Rabbit Leafy Safe Bowl', pet: ['Rabbit'], type: 'Veg', cat: 'Meal', time: 8, diff: 'Easy', cal: 110, protein: 6, fiber: 14, vit: 88, vet: true, budget: true, season: 'Summer fresh', image: 'images/r4.png', ingredients: ['romaine lettuce', 'coriander', 'carrot small amount', 'hay'], steps: ['Wash leaves well.', 'Chop into small pieces.', 'Add only a small carrot portion.', 'Serve with unlimited hay and clean water.'] },
+      { id: 'r5', title: 'Bird Seed Fruit Treat', pet: ['Bird'], type: 'Veg', cat: 'Snack', time: 10, diff: 'Easy', cal: 95, protein: 7, fiber: 5, vit: 76, vet: false, budget: true, season: 'Summer treat', image: 'images/r5.png', ingredients: ['millet', 'apple without seeds', 'carrot', 'boiled corn small amount'], steps: ['Remove all apple seeds.', 'Chop fruit and carrot very small.', 'Mix with millet.', 'Serve as a small treat, not full meal.'] },
+      { id: 'r6', title: 'Emergency Egg Rice Mini Meal', pet: ['Dog', 'Cat'], type: 'Non-Veg', cat: 'Quick', time: 12, diff: 'Easy', cal: 220, protein: 18, fiber: 2, vit: 55, vet: false, budget: true, season: 'Emergency', image: 'images/r6.png', ingredients: ['boiled egg', 'rice', 'water'], steps: ['Boil egg completely.', 'Cook soft rice.', 'Mash together with warm water.', 'Serve only as a quick temporary meal.'] },
+      { id: 'r7', title: 'Budget Veg Protein Mix', pet: ['Dog'], type: 'Veg', cat: 'Budget', time: 22, diff: 'Easy', cal: 260, protein: 15, fiber: 7, vit: 69, vet: false, budget: true, season: 'Budget friendly', image: 'images/r7.png', ingredients: ['rice', 'lentil water', 'pumpkin', 'beans small amount'], steps: ['Cook rice softly.', 'Use cooked lentil water, not spicy dal.', 'Steam pumpkin and beans.', 'Mix, cool, and serve in small portions.'] },
+      { id: 'r8', title: 'Frozen Hydration Snack', pet: ['Dog'], type: 'Veg', cat: 'Seasonal', time: 5, diff: 'Easy', cal: 60, protein: 3, fiber: 3, vit: 60, vet: true, budget: true, season: 'Hot summer', image: 'images/r8.png', ingredients: ['watermelon seedless', 'curd', 'water'], steps: ['Use seedless watermelon only.', 'Blend with plain curd and water.', 'Freeze in small cubes.', 'Give as an occasional cooling treat.'] }
     ];
     let activeRecipeId = null;
     let foodTimer = null;
@@ -21425,6 +21425,12 @@ Use emojis and keep under 150 words.`;
       document.getElementById('formRecipeVetTip').value = '';
       document.getElementById('formRecipeVetApproved').checked = false;
 
+      // Clear image fields
+      document.getElementById('formRecipeImageFile').value = '';
+      document.getElementById('formRecipeImage').value = '';
+      document.getElementById('formRecipeImagePreviewImg').src = '';
+      document.getElementById('formRecipeImagePreview').style.display = 'none';
+
       document.getElementById('recipeModal').classList.remove('hidden');
     }
 
@@ -21451,6 +21457,18 @@ Use emojis and keep under 150 words.`;
       document.getElementById('formRecipeVetTip').value = r.vetTip || '';
       document.getElementById('formRecipeVetApproved').checked = !!r.vet;
 
+      // Set image fields
+      document.getElementById('formRecipeImageFile').value = '';
+      if (r.image) {
+        document.getElementById('formRecipeImage').value = r.image;
+        document.getElementById('formRecipeImagePreviewImg').src = r.image;
+        document.getElementById('formRecipeImagePreview').style.display = 'block';
+      } else {
+        document.getElementById('formRecipeImage').value = '';
+        document.getElementById('formRecipeImagePreviewImg').src = '';
+        document.getElementById('formRecipeImagePreview').style.display = 'none';
+      }
+
       document.getElementById('recipeModal').classList.remove('hidden');
     }
 
@@ -21476,6 +21494,7 @@ Use emojis and keep under 150 words.`;
       const steps = document.getElementById('formRecipeSteps').value.split('\n').map(s => s.trim()).filter(Boolean);
       const vetTip = document.getElementById('formRecipeVetTip').value.trim();
       const vetApproved = document.getElementById('formRecipeVetApproved').checked;
+      const image = document.getElementById('formRecipeImage').value;
 
       if (!name) { showToast('Please enter a recipe name'); return; }
       if (!ingredients.length) { showToast('Please enter ingredients'); return; }
@@ -21503,6 +21522,7 @@ Use emojis and keep under 150 words.`;
         vet: vetApproved,
         benefits: vetTip ? [vetTip] : ['Nutritious home-cooked food.'],
         warnings: ['Serve in portion-controlled sizes appropriate for weight.'],
+        image: image || null,
         custom: true
       };
 
@@ -21527,6 +21547,20 @@ Use emojis and keep under 150 words.`;
       normalizeAndMergeDB();
       renderHomemadeTab();
     }
+
+    function handleRecipeImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('formRecipeImage').value = e.target.result;
+        document.getElementById('formRecipeImagePreviewImg').src = e.target.result;
+        document.getElementById('formRecipeImagePreview').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+    window.handleRecipeImageUpload = handleRecipeImageUpload;
+
 
     // Interactive Planner Functions
     function getWeeklyPlan() {
