@@ -23,7 +23,7 @@ async function callGemini(systemPrompt, userMessage, temperature = 0.3) {
     throw new Error("Missing or invalid GEMINI_API_KEY environment variable.");
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
   
   const response = await fetch(url, {
     method: 'POST',
@@ -264,7 +264,7 @@ Return a JSON object with:
 
     prompt += "\n\nThe output MUST be valid, parsable JSON only. Do not wrap it in markdown code blocks like \`\`\`json ... \`\`\` or include any conversational text before or after the JSON.";
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
     
     console.log("Sending multimodal request to Google Gemini API...");
     const startTime = Date.now();
