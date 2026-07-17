@@ -3836,11 +3836,12 @@
         }
       }
     }
-    function handleFoodPhoto(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { document.getElementById('foodPhotoPreview').innerHTML = `<img src="${reader.result}" class="food-preview-img"><div class="photo-analysis"><b>AI Food Quality Analysis</b><p style="font-size:13px;color:var(--muted);line-height:1.45">Food looks fresh. Check that it has no onion, garlic, salt, masala, chocolate or bones. Serve only after cooling.</p></div>` }; reader.readAsDataURL(file); }
-    function saveFoodReaction() { const st = getRecipeStore(); const reaction = document.getElementById('foodReaction').value; st.reactions.unshift({ reaction, ok: reaction.includes('Loved') || reaction.includes('normally'), time: new Date().toISOString() }); saveRecipeStore(st); showToast('Meal reaction saved 😊'); renderRecipeMemory(); }
+    function handleFoodPhoto(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { const preview = document.getElementById('foodPhotoPreview'); if (preview) preview.innerHTML = `<img src="${reader.result}" class="food-preview-img"><div class="photo-analysis"><b>AI Food Quality Analysis</b><p style="font-size:13px;color:var(--muted);line-height:1.45">Food looks fresh. Check that it has no onion, garlic, salt, masala, chocolate or bones. Serve only after cooling.</p></div>` }; reader.readAsDataURL(file); }
+    function saveFoodReaction() { const st = getRecipeStore(); const el = document.getElementById('foodReaction'); const reaction = el ? el.value : '😄 Loved it'; st.reactions.unshift({ reaction, ok: reaction.includes('Loved') || reaction.includes('normally'), time: new Date().toISOString() }); saveRecipeStore(st); showToast('Meal reaction saved 😊'); renderRecipeMemory(); }
     function completeMeal(id) {
       saveRecipe(id);
-      document.getElementById('foodReaction').value = '😄 Loved it';
+      const el = document.getElementById('foodReaction');
+      if (el) el.value = '😄 Loved it';
       saveFoodReaction();
       // Auto stock deduction for completed meals
       if (typeof deductStockAutomatically === 'function') {

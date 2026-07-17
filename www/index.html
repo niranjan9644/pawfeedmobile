@@ -834,25 +834,7 @@
           <div id="foodAIReply" style="font-size:13px;line-height:1.45;margin-top:10px"></div>
         </div>
 
-        <div class="card">
-          <h3 style="font-weight:900;color:var(--dark)">📷 Homemade Food Photo Analysis</h3>
-          <p class="subtitle" style="margin:5px 0 10px">Upload food photo for quality analysis and feeding reaction
-            tracking.</p>
-          <input type="file" id="foodPhotoInput" accept="image/*" style="display:none"
-            onchange="handleFoodPhoto(event)" />
-          <button class="secondary-btn" onclick="document.getElementById('foodPhotoInput').click()">Upload Homemade Food
-            Photo</button>
-          <div id="foodPhotoPreview"></div>
-          <label>Pet Reaction / Mood After Food</label>
-          <select id="foodReaction" onchange="saveFoodReaction()">
-            <option>😄 Loved it</option>
-            <option>🙂 Ate normally</option>
-            <option>😐 Ate little</option>
-            <option>🤢 Upset stomach</option>
-            <option>❌ Refused food</option>
-          </select>
-          <button class="primary-btn" onclick="saveFoodReaction()">Save Reaction</button>
-        </div>
+
 
         <div class="section-header">
           <h3 class="section-title">🍱 Recipe Library</h3>
@@ -1014,17 +996,15 @@
         <div id="plannerHistoryBox" style="margin-top:10px"></div>
       </div>
 
-      <!-- COMBO: SOCIAL + GAME + SCAN -->
+      <!-- COMBO: SOCIAL + GAME -->
       <div id="comboTab-social" class="screen tab-screen hidden">
         <div class="combo-sub-tabs">
           <div class="combo-sub-tab active" id="csub-community" onclick="switchComboSub('social','community')">👥 Social
           </div>
           <div class="combo-sub-tab" id="csub-game" onclick="switchComboSub('social','game')">🏆 Game</div>
-          <div class="combo-sub-tab" id="csub-vision" onclick="switchComboSub('social','vision')">📷 Scan</div>
         </div>
         <div id="comboInner-social-community"></div>
         <div id="comboInner-social-game" style="display:none"></div>
-        <div id="comboInner-social-vision" style="display:none"></div>
       </div>
 
       <!-- ADD/EDIT RECIPE MODAL -->
