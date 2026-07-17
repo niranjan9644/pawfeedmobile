@@ -2580,7 +2580,7 @@
 
     // ==================== TAB NAVIGATION ====================
     function openTab(tab) {
-      document.querySelectorAll('.tab-screen').forEach(t => t.classList.add('hidden'));
+      document.querySelectorAll('#mainApp > .tab-screen').forEach(t => t.classList.add('hidden'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       const el = document.getElementById(tab + 'Tab');
       if (el) el.classList.remove('hidden');
@@ -2605,7 +2605,7 @@
     }
 
     function openCombo(combo, defaultSub) {
-      document.querySelectorAll('.tab-screen').forEach(t => t.classList.add('hidden'));
+      document.querySelectorAll('#mainApp > .tab-screen').forEach(t => t.classList.add('hidden'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       const el = document.getElementById('comboTab-' + combo);
       if (el) el.classList.remove('hidden');
@@ -2664,16 +2664,29 @@
         }
       } else if (combo === 'social') {
         if (sub === 'community') {
-          renderCommunity();
           const box = document.getElementById('comboInner-social-community');
-          if (box) box.innerHTML = document.getElementById('communityTab').innerHTML;
+          const tab = document.getElementById('communityTab');
+          if (box && tab) {
+            box.appendChild(tab);
+            tab.classList.remove('hidden');
+          }
+          renderCommunity();
         } else if (sub === 'game') {
-          renderGameTab();
           const box = document.getElementById('comboInner-social-game');
-          if (box) box.innerHTML = document.getElementById('gameTab').innerHTML;
+          const tab = document.getElementById('gameTab');
+          if (box && tab) {
+            box.appendChild(tab);
+            tab.classList.remove('hidden');
+          }
+          renderGameTab();
         } else if (sub === 'vision') {
           const box = document.getElementById('comboInner-social-vision');
-          if (box) box.innerHTML = document.getElementById('visionTab').innerHTML;
+          const tab = document.getElementById('visionTab');
+          if (box && tab) {
+            box.appendChild(tab);
+            tab.classList.remove('hidden');
+          }
+          renderVisionHistory();
         }
 
       }
@@ -3035,31 +3048,84 @@
       reader.onload = function (e) { selectedVisionImage = e.target.result; document.getElementById('visionPreview').innerHTML = `<img class="scan-preview" src="${selectedVisionImage}" alt="scan image">`; };
       reader.readAsDataURL(file);
     }
-    function runVisionScan() {
+    async function runVisionScan() {
       const mode = document.getElementById('scanMode').value;
-      const desc = (document.getElementById('scanDescription').value || '').toLowerCase();
+      const desc = (document.getElementById('scanDescription').value || '').trim();
       if (!selectedVisionImage && !desc) { showToast('Upload image or enter description'); return; }
-      const pets = getPets(); const active = pets[getActivePetIdx()] || pets[0] || {};
-      let title = 'Smart Scan Result', risk = 'safe', result = 'Looks okay based on the scan.', advice = 'For health issues, consult a veterinarian.';
-      const unsafeWords = ['chocolate', 'grape', 'raisin', 'onion', 'garlic', 'alcohol', 'caffeine', 'xylitol', 'avocado', 'spicy', 'salt'];
-      if (mode === 'food') {
-        title = 'Food Safety Scan';
-        const bad = unsafeWords.find(w => desc.includes(w));
-        if (bad) { risk = 'danger'; result = `Potential unsafe food detected: ${bad}.`; advice = 'Do not feed this item. Check the unsafe food guide and ask a vet if consumed.'; }
-        else { risk = 'safe'; result = 'No obvious unsafe keyword detected in the description.'; advice = 'Still verify ingredients before feeding.'; }
-      } else if (mode === 'breed') {
-        title = 'Breed Detection'; risk = 'warn'; result = `Estimated pet type: ${active.type || 'Dog/Cat'}${active.breed ? ' · possible breed: ' + active.breed : ''}.`; advice = 'Breed estimate is based on your pet profile details.';
-      } else if (mode === 'weight') {
-        title = 'Body Weight Estimation'; risk = 'warn'; result = `Estimated weight range: ${active.weight ? (Math.max(0.5, Number(active.weight) - 1).toFixed(1) + '–' + (Number(active.weight) + 1).toFixed(1) + ' kg') : 'profile weight not available'}.`; advice = 'Use a scale for accurate weight tracking. Log the verified weight in Tracker.';
-      } else if (mode === 'fur') {
-        title = 'Skin / Fur Check';
-        if (['red', 'rash', 'wound', 'patch', 'itch', 'hair loss', 'bald'].some(w => desc.includes(w))) { risk = 'danger'; result = 'Possible skin/fur concern mentioned.'; advice = 'Monitor closely and consult a veterinarian if irritation, wounds, or hair loss continue.'; }
-        else { risk = 'safe'; result = 'No obvious issue detected from the provided description.'; advice = 'Keep checking coat shine, itching, smell, and shedding.'; }
+      
+      const pets = getPets();
+      const active = pets[getActivePetIdx()] || pets[0] || {};
+      
+      let title = 'Smart Scan Result';
+      let risk = 'safe';
+      let result = 'Looks okay based on the scan.';
+      let advice = 'For health issues, consult a veterinarian.';
+      
+      // If we have an image, query our backend multimodal Gemini API!
+      if (selectedVisionImage) {
+        try {
+          const resData = await callAI('/api/vision-scan', {
+            image: selectedVisionImage,
+            mode: mode,
+            description: desc,
+            petType: active.type || 'Dog'
+          });
+          
+          if (resData) {
+            title = resData.title || title;
+            risk = (resData.risk || risk).toLowerCase();
+            result = resData.result || result;
+            advice = resData.advice || advice;
+          }
+        } catch (err) {
+          console.error("Error executing live vision scan, falling back to simulator:", err);
+          showToast("AI Scan server busy. Running local simulation...");
+          
+          // Local fallback logic
+          const unsafeWords = ['chocolate', 'grape', 'raisin', 'onion', 'garlic', 'alcohol', 'caffeine', 'xylitol', 'avocado', 'spicy', 'salt'];
+          if (mode === 'food') {
+            title = 'Food Safety Scan';
+            const bad = unsafeWords.find(w => desc.toLowerCase().includes(w));
+            if (bad) { risk = 'danger'; result = `Potential unsafe food detected: ${bad}.`; advice = 'Do not feed this item. Check the unsafe food guide and ask a vet if consumed.'; }
+            else { risk = 'safe'; result = 'No obvious unsafe keyword detected in the description.'; advice = 'Still verify ingredients before feeding.'; }
+          } else if (mode === 'breed') {
+            title = 'Breed Detection'; risk = 'warn'; result = `Estimated pet type: ${active.type || 'Dog/Cat'}${active.breed ? ' · possible breed: ' + active.breed : ''}.`; advice = 'Breed estimate is based on your pet profile details.';
+          } else if (mode === 'weight') {
+            title = 'Body Weight Estimation'; risk = 'warn'; result = `Estimated weight range: ${active.weight ? (Math.max(0.5, Number(active.weight) - 1).toFixed(1) + '–' + (Number(active.weight) + 1).toFixed(1) + ' kg') : 'profile weight not available'}.`; advice = 'Use a scale for accurate weight tracking. Log the verified weight in Tracker.';
+          } else if (mode === 'fur') {
+            title = 'Skin / Fur Check';
+            if (['red', 'rash', 'wound', 'patch', 'itch', 'hair loss', 'bald'].some(w => desc.toLowerCase().includes(w))) { risk = 'danger'; result = 'Possible skin/fur concern mentioned.'; advice = 'Monitor closely and consult a veterinarian if irritation, wounds, or hair loss continue.'; }
+            else { risk = 'safe'; result = 'No obvious issue detected from the provided description.'; advice = 'Keep checking coat shine, itching, smell, and shedding.'; }
+          }
+        }
+      } else {
+        // Local simulation for text-only inputs
+        const unsafeWords = ['chocolate', 'grape', 'raisin', 'onion', 'garlic', 'alcohol', 'caffeine', 'xylitol', 'avocado', 'spicy', 'salt'];
+        if (mode === 'food') {
+          title = 'Food Safety Scan';
+          const bad = unsafeWords.find(w => desc.toLowerCase().includes(w));
+          if (bad) { risk = 'danger'; result = `Potential unsafe food detected: ${bad}.`; advice = 'Do not feed this item. Check the unsafe food guide and ask a vet if consumed.'; }
+          else { risk = 'safe'; result = 'No obvious unsafe keyword detected in the description.'; advice = 'Still verify ingredients before feeding.'; }
+        } else if (mode === 'breed') {
+          title = 'Breed Detection'; risk = 'warn'; result = `Estimated pet type: ${active.type || 'Dog/Cat'}${active.breed ? ' · possible breed: ' + active.breed : ''}.`; advice = 'Breed estimate is based on your pet profile details.';
+        } else if (mode === 'weight') {
+          title = 'Body Weight Estimation'; risk = 'warn'; result = `Estimated weight range: ${active.weight ? (Math.max(0.5, Number(active.weight) - 1).toFixed(1) + '–' + (Number(active.weight) + 1).toFixed(1) + ' kg') : 'profile weight not available'}.`; advice = 'Use a scale for accurate weight tracking. Log the verified weight in Tracker.';
+        } else if (mode === 'fur') {
+          title = 'Skin / Fur Check';
+          if (['red', 'rash', 'wound', 'patch', 'itch', 'hair loss', 'bald'].some(w => desc.toLowerCase().includes(w))) { risk = 'danger'; result = 'Possible skin/fur concern mentioned.'; advice = 'Monitor closely and consult a veterinarian if irritation, wounds, or hair loss continue.'; }
+          else { risk = 'safe'; result = 'No obvious issue detected from the provided description.'; advice = 'Keep checking coat shine, itching, smell, and shedding.'; }
+        }
       }
+      
       const cls = risk === 'danger' ? 'risk-danger' : risk === 'warn' ? 'risk-warn' : 'risk-safe';
       const html = `<div class="scan-result"><h3 style="font-weight:900">${title}</h3><span class="scan-risk ${cls}">${risk.toUpperCase()}</span><p style="font-size:14px;line-height:1.5;margin-top:8px"><b>Result:</b> ${result}</p><p style="font-size:13px;color:var(--muted);line-height:1.5"><b>Advice:</b> ${advice}</p></div>`;
       document.getElementById('visionResultBox').innerHTML = html;
-      const hist = getScanHistory(); hist.unshift({ id: Date.now(), mode, title, risk, result, advice, image: selectedVisionImage, date: new Date().toISOString() }); saveScanHistory(hist.slice(0, 25)); renderVisionHistory(); renderGameTab();
+      
+      const hist = getScanHistory();
+      hist.unshift({ id: Date.now(), mode, title, risk, result, advice, image: selectedVisionImage, date: new Date().toISOString() });
+      saveScanHistory(hist.slice(0, 25));
+      renderVisionHistory();
+      renderGameTab();
     }
     function renderVisionHistory() {
       const box = document.getElementById('scanHistoryBox'); if (!box) return;

@@ -185,6 +185,134 @@ app.post('/api/pawfeed-weekly-summary', async (req, res) => {
   }
 });
 
+// ── 5. SMART VISION SCAN ENDPOINT ───────────────────────────────────────────
+app.post('/api/vision-scan', async (req, res) => {
+  try {
+    const { image, mode, description, petType } = req.body;
+    console.log(`Smart Vision Scan requested: mode=${mode}, petType=${petType || 'Dog'}`);
+
+    if (!image) {
+      return res.status(400).json({ error: "Image data (Base64) is required." });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === 'your_key_here') {
+      throw new Error("Missing or invalid GEMINI_API_KEY environment variable.");
+    }
+
+    // Parse MIME type and base64 payload
+    const matches = image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return res.status(400).json({ error: "Invalid base64 image format." });
+    }
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+
+    let prompt = "";
+    if (mode === 'food') {
+      prompt = `Analyze this image of food and description: "${description || 'None'}". Determine if this food is 100% safe for a pet ${petType || 'Dog'}. Identify any toxic ingredients or foreign objects.
+Return a JSON object with:
+{
+  "risk": "SAFE" | "WARN" | "DANGER",
+  "result": "Detailed analysis of what the food contains and whether it is safe.",
+  "advice": "Practical feeding advice or veterinary steps to take if unsafe.",
+  "title": "Food Safety Scan"
+}`;
+    } else if (mode === 'breed') {
+      prompt = `Analyze this image of a pet. Identify its species (Dog, Cat, Rabbit, Bird, or Fish) and estimate its breed.
+Return a JSON object with:
+{
+  "risk": "SAFE" | "WARN",
+  "result": "Estimated species and breed details.",
+  "advice": "Breed-specific care or nutrition notes.",
+  "title": "Breed Detection"
+}`;
+    } else if (mode === 'weight') {
+      prompt = `Analyze this image of a pet. Estimate its body condition score (BCS) and estimate its body weight in kg (give a reasonable range).
+Return a JSON object with:
+{
+  "risk": "SAFE" | "WARN",
+  "result": "Estimated BCS score (1-9 scale) and weight range.",
+  "advice": "Weight management recommendations.",
+  "title": "Body Weight Estimation"
+}`;
+    } else if (mode === 'fur') {
+      prompt = `Analyze this image of a pet's skin or fur. Look for redness, rashes, wounds, bald patches, ticks, or irritation.
+Return a JSON object with:
+{
+  "risk": "SAFE" | "WARN" | "DANGER",
+  "result": "Observation of the skin/fur condition.",
+  "advice": "Actionable care advice or veterinary consulting recommendation.",
+  "title": "Skin / Fur Check"
+}`;
+    } else {
+      prompt = `Analyze this pet image. Return a JSON object with:
+{
+  "risk": "SAFE",
+  "result": "General observation.",
+  "advice": "General care tips.",
+  "title": "Smart Scan"
+}`;
+    }
+
+    prompt += "\n\nThe output MUST be valid, parsable JSON only. Do not wrap it in markdown code blocks like \`\`\`json ... \`\`\` or include any conversational text before or after the JSON.";
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType: mimeType,
+                data: base64Data
+              }
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 1000
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Gemini API error (Status ${response.status}): ${errText}`);
+    }
+
+    const data = await response.json();
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+      throw new Error("Malformed response from Gemini API");
+    }
+
+    const replyText = data.candidates[0].content.parts[0].text;
+    try {
+      const cleanJsonStr = replyText.replace(/\`\`\`json|\`\`\`/g, '').trim();
+      const resultJson = JSON.parse(cleanJsonStr);
+      res.json(resultJson);
+    } catch (e) {
+      console.warn("Gemini response was not clean JSON, returning text:", replyText);
+      res.json({
+        risk: "WARN",
+        result: replyText,
+        advice: "Consult a professional for accurate details.",
+        title: "Smart Scan Result"
+      });
+    }
+  } catch (error) {
+    console.error("Error in /api/vision-scan:", error);
+    res.status(500).json({ error: error.message || "Failed to analyze image with Gemini" });
+  }
+});
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`PawFeed Gemini Backend running on port ${PORT}`);
