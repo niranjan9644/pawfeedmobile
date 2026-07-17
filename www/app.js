@@ -440,7 +440,7 @@
       let lastError = null;
       for (const url of urlsToTry) {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 seconds timeout per attempt
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 seconds timeout per attempt
 
         try {
           console.log(`Attempting AI connection: ${url}`);
@@ -3055,11 +3055,41 @@
   `;
     }
 
-    // ==================== COMPUTER VISION FEATURES ====================
+    function compressImage(dataUrl, maxDim = 800) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.src = dataUrl;
+        img.onload = function () {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.onerror = function () {
+          resolve(dataUrl);
+        };
+      });
+    }
     function handleVisionImage(event) {
       const file = event.target.files[0]; if (!file) return;
       const reader = new FileReader();
-      reader.onload = function (e) { selectedVisionImage = e.target.result; document.getElementById('visionPreview').innerHTML = `<img class="scan-preview" src="${selectedVisionImage}" alt="scan image">`; };
+      reader.onload = async function (e) {
+        selectedVisionImage = await compressImage(e.target.result, 800);
+        document.getElementById('visionPreview').innerHTML = `<img class="scan-preview" src="${selectedVisionImage}" alt="scan image">`;
+      };
       reader.readAsDataURL(file);
     }
     async function runVisionScan() {
