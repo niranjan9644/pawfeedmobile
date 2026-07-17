@@ -759,7 +759,7 @@
     }
 
     // ==================== LOADING SCREEN ====================
-    window.addEventListener('load', function () {
+    window.addEventListener('DOMContentLoaded', function () {
       const bar = document.getElementById('loadingBar');
       let w = 0;
       const iv = setInterval(() => {

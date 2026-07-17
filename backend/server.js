@@ -190,11 +190,15 @@ app.post('/api/pawfeed-weekly-summary', async (req, res) => {
 app.post('/api/vision-scan', async (req, res) => {
   try {
     const { image, mode, description, petType } = req.body;
-    console.log(`Smart Vision Scan requested: mode=${mode}, petType=${petType || 'Dog'}`);
+    console.log(`[${new Date().toLocaleTimeString()}] Smart Vision Scan requested: mode=${mode}, petType=${petType || 'Dog'}`);
 
     if (!image) {
+      console.warn("Error: Image data is empty.");
       return res.status(400).json({ error: "Image data (Base64) is required." });
     }
+
+    console.log(`Image data length: ${image.length} characters`);
+    console.log(`Image starts with: ${image.substring(0, 80)}...`);
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey === 'your_key_here') {
@@ -204,10 +208,12 @@ app.post('/api/vision-scan', async (req, res) => {
     // Parse MIME type and base64 payload
     const matches = image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
     if (!matches || matches.length !== 3) {
+      console.warn("Error: Invalid base64 image format structure.");
       return res.status(400).json({ error: "Invalid base64 image format." });
     }
     const mimeType = matches[1];
     const base64Data = matches[2];
+    console.log(`Parsed mimeType: ${mimeType}, base64Data length: ${base64Data.length} chars`);
 
     let prompt = "";
     if (mode === 'food') {
@@ -260,6 +266,8 @@ Return a JSON object with:
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
     
+    console.log("Sending multimodal request to Google Gemini API...");
+    const startTime = Date.now();
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -283,6 +291,8 @@ Return a JSON object with:
         }
       })
     });
+
+    console.log(`Gemini API response received in ${Date.now() - startTime}ms. Status: ${response.status}`);
 
     if (!response.ok) {
       const errText = await response.text();
