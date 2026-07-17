@@ -430,41 +430,57 @@
         if (bar) bar.style.width = '60%';
       }
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000);
+      // Set up fallbacks for development (localhost & local network IP) and production (Render)
+      const urlsToTry = [];
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        urlsToTry.push(`http://localhost:5000${endpoint}`);
+      } else {
+        urlsToTry.push(`http://192.168.1.10:5000${endpoint}`); // Computer's local IP address
+      }
+      urlsToTry.push(`https://pawfeedmobile.onrender.com${endpoint}`); // Render production URL
 
-      try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: controller.signal
-        });
+      let lastError = null;
+      for (const url of urlsToTry) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 seconds timeout per attempt
 
-        clearTimeout(timeoutId);
+        try {
+          console.log(`Attempting AI connection: ${url}`);
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
 
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.error || `HTTP error ${response.status}`);
-        }
+          clearTimeout(timeoutId);
 
-        return await response.json();
-      } catch (error) {
-        clearTimeout(timeoutId);
-        if (error.name === 'AbortError') {
-          showToast("Request timed out. Please try again. ⏱️");
-        } else {
-          showToast("Failed to connect to AI. Please check your connection. ❌");
-        }
-        throw error;
-      } finally {
-        if (loadingScreen) {
-          loadingScreen.style.opacity = '0';
-          setTimeout(() => {
-            loadingScreen.style.display = 'none';
-          }, 300);
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP error ${response.status}`);
+          }
+
+          return await response.json();
+        } catch (error) {
+          clearTimeout(timeoutId);
+          console.warn(`Connection failed to ${url}:`, error);
+          lastError = error;
         }
       }
+
+      if (loadingScreen) {
+        loadingScreen.style.opacity = '0';
+        setTimeout(() => {
+          loadingScreen.style.display = 'none';
+        }, 300);
+      }
+
+      if (lastError && lastError.name === 'AbortError') {
+        showToast("Request timed out. Please try again. ⏱️");
+      } else {
+        showToast("Failed to connect to AI. Please check your connection. ❌");
+      }
+      throw lastError || new Error("All connection attempts failed");
     }
     let calendarMonthDate = new Date();
     let confirmCallback = null;
