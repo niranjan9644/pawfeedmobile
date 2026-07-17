@@ -23,38 +23,56 @@ async function callGemini(systemPrompt, userMessage, temperature = 0.3) {
     throw new Error("Missing or invalid GEMINI_API_KEY environment variable.");
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-  
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{ text: userMessage }]
-      }],
-      systemInstruction: systemPrompt ? {
-        parts: [{ text: systemPrompt }]
-      } : undefined,
-      generationConfig: {
-        temperature: temperature,
-        maxOutputTokens: 1500
+  const models = [
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-flash-latest',
+    'gemini-pro-latest'
+  ];
+
+  let lastError = null;
+  for (const model of models) {
+    try {
+      console.log(`Attempting chat with model: ${model}`);
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: userMessage }]
+          }],
+          systemInstruction: systemPrompt ? {
+            parts: [{ text: systemPrompt }]
+          } : undefined,
+          generationConfig: {
+            temperature: temperature,
+            maxOutputTokens: 1500
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Gemini API error (Status ${response.status}): ${errText}`);
       }
-    })
-  });
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Gemini API error (Status ${response.status}): ${errText}`);
+      const data = await response.json();
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+        throw new Error("Malformed response from Gemini API");
+      }
+
+      console.log(`Chat succeeded with model: ${model}`);
+      return data.candidates[0].content.parts[0].text;
+    } catch (err) {
+      console.warn(`Model ${model} failed:`, err.message);
+      lastError = err;
+    }
   }
-
-  const data = await response.json();
-  if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
-    throw new Error("Malformed response from Gemini API");
-  }
-
-  return data.candidates[0].content.parts[0].text;
+  throw lastError || new Error("All chat models failed");
 }
 
 // Middleware to log all incoming requests
@@ -264,39 +282,64 @@ Return a JSON object with:
 
     prompt += "\n\nThe output MUST be valid, parsable JSON only. Do not wrap it in markdown code blocks like \`\`\`json ... \`\`\` or include any conversational text before or after the JSON.";
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-    
-    console.log("Sending multimodal request to Google Gemini API...");
-    const startTime = Date.now();
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                mimeType: mimeType,
-                data: base64Data
-              }
+    const models = [
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-lite',
+      'gemini-flash-latest',
+      'gemini-pro-latest'
+    ];
+
+    let lastError = null;
+    let response = null;
+
+    for (const model of models) {
+      try {
+        console.log(`Attempting vision scan with model: ${model}`);
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        
+        console.log(`Sending multimodal request to Google Gemini API (${model})...`);
+        const startTime = Date.now();
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: prompt },
+                {
+                  inlineData: {
+                    mimeType: mimeType,
+                    data: base64Data
+                  }
+                }
+              ]
+            }],
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: 1000
             }
-          ]
-        }],
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 1000
+          })
+        });
+
+        console.log(`Gemini response received from ${model} in ${Date.now() - startTime}ms. Status: ${res.status}`);
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Gemini API error (Status ${res.status}): ${errText}`);
         }
-      })
-    });
 
-    console.log(`Gemini API response received in ${Date.now() - startTime}ms. Status: ${response.status}`);
+        response = res;
+        break; // Break loop on success!
+      } catch (err) {
+        console.warn(`Vision model ${model} failed:`, err.message);
+        lastError = err;
+      }
+    }
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Gemini API error (Status ${response.status}): ${errText}`);
+    if (!response) {
+      throw lastError || new Error("All vision models failed");
     }
 
     const data = await response.json();
