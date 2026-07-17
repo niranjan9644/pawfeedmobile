@@ -431,13 +431,11 @@
       }
 
       // Set up fallbacks for development (localhost & local network IP) and production (Render)
-      const urlsToTry = [];
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        urlsToTry.push(`http://localhost:5000${endpoint}`);
-      } else {
-        urlsToTry.push(`http://192.168.1.10:5000${endpoint}`); // Computer's local IP address
-      }
-      urlsToTry.push(`https://pawfeedmobile.onrender.com${endpoint}`); // Render production URL
+      const urlsToTry = [
+        `http://localhost:5000${endpoint}`,
+        `http://192.168.1.10:5000${endpoint}`,
+        `https://pawfeedmobile.onrender.com${endpoint}`
+      ];
 
       let lastError = null;
       for (const url of urlsToTry) {
