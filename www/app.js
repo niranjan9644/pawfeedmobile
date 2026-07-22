@@ -4097,25 +4097,64 @@
     }
 
     function updateRecipeAutocomplete() {
-      const dl = document.getElementById('recipeSuggestions');
-      if (!dl) return;
-      const terms = new Set();
+      // no-op — suggestions are now driven by onRecipeSearchInput()
+    }
+
+    function onRecipeSearchInput() {
+      renderHomemadeTab();
+      const query = (document.getElementById('recipeSearch')?.value || '').trim().toLowerCase();
+      const box = document.getElementById('recipeSuggestionBox');
+      if (!box) return;
+
+      if (!query) { box.style.display = 'none'; return; }
+
+      // Build suggestions: matching recipe titles first, then matching ingredient phrases
+      const titleMatches = [];
+      const ingredientMatches = new Set();
       HOME_RECIPES.forEach(r => {
-        if (r.title) terms.add(r.title);
+        if (r.title && r.title.toLowerCase().includes(query)) {
+          titleMatches.push(r.title);
+        }
         if (Array.isArray(r.ingredients)) {
           r.ingredients.forEach(ing => {
-            // Also add significant individual words (>3 chars) from the ingredient
-            ing.split(/\s+/).forEach(word => {
-              const clean = word.replace(/[^a-z]/gi, '').toLowerCase();
-              if (clean.length > 3) terms.add(clean);
-            });
+            const clean = ing.toLowerCase().replace(/[^a-z\s]/g, '').trim();
+            if (clean.includes(query)) ingredientMatches.add(clean);
           });
         }
       });
-      dl.innerHTML = Array.from(terms)
-        .sort()
-        .map(t => `<option value="${t}">`)
-        .join('');
+
+      const allSuggestions = [
+        ...titleMatches.slice(0, 5),
+        ...[...ingredientMatches].slice(0, 4)
+      ].filter((v, i, a) => a.indexOf(v) === i); // deduplicate
+
+      if (!allSuggestions.length) { box.style.display = 'none'; return; }
+
+      box.innerHTML = allSuggestions.map(s => `
+        <div
+          onmousedown="selectRecipeSuggestion('${s.replace(/'/g, "\\'")}')"
+          style="padding:10px 14px;font-size:13px;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+          onmouseover="this.style.background='var(--card-2)'"
+          onmouseout="this.style.background=''"
+        ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>${s}</div>
+      `).join('');
+
+      box.style.display = 'block';
+    }
+
+    function selectRecipeSuggestion(value) {
+      const input = document.getElementById('recipeSearch');
+      if (input) { input.value = value; }
+      hideRecipeSuggestions();
+      renderHomemadeTab();
+    }
+
+    function hideRecipeSuggestions() {
+      // small delay so onmousedown on a suggestion fires before the box hides
+      setTimeout(() => {
+        const box = document.getElementById('recipeSuggestionBox');
+        if (box) box.style.display = 'none';
+      }, 180);
     }
 
     function renderHomemadeDashboard(pet, recipes) {
