@@ -4039,14 +4039,59 @@
       console.log("Recipes merged into HOME_RECIPES. Total:", HOME_RECIPES.length);
     }
 
+    function toggleRecipeFilters() {
+      const panel = document.getElementById('recipeFilterPanel');
+      const btn   = document.getElementById('recipeFilterBtn');
+      if (!panel) return;
+      const isOpen = panel.style.display !== 'none';
+      panel.style.display = isOpen ? 'none' : 'block';
+      if (btn) {
+        btn.style.background    = isOpen ? 'var(--card-2)' : 'var(--orange)';
+        btn.style.color         = isOpen ? ''              : '#fff';
+        btn.style.borderColor   = isOpen ? 'var(--border)' : 'var(--orange)';
+      }
+    }
+
+    function resetRecipeFilters() {
+      ['recipeCategory','recipeVegFilter','filterAgeGroup','filterDifficulty','filterCookTime','filterVetApproved']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = 'All'; });
+      renderHomemadeTab();
+    }
+
     function renderHomemadeTab(keepLimit) {
       if (!keepLimit) recipeLimit = 15;
       const pets = getPets(); const activeIdx = getActivePetIdx(); const pet = pets[activeIdx] || null;
       const tabs = document.getElementById('homemadePetTabs'); if (!tabs) return;
       tabs.innerHTML = pets.length ? pets.map((p, i) => `<div class="pet-tab ${i === activeIdx ? 'active' : ''}" onclick="setActivePet(${i});renderHomemadeTab()">${p.avatar ? '<img src="' + p.avatar + '" style="width:18px;height:18px;border-radius:50%;vertical-align:middle;margin-right:4px">' : PET_ICONS[p.type]} ${p.name}</div>`).join('') : '<div class="pet-tab active">General Recipes</div>';
-      const search = (document.getElementById('recipeSearch')?.value || '').toLowerCase();
-      const cat = document.getElementById('recipeCategory')?.value || 'All'; const veg = document.getElementById('recipeVegFilter')?.value || 'All';
-      const recipes = HOME_RECIPES.filter(r => (!pet || r.pet.includes(pet.type)) && (cat === 'All' || r.cat === cat) && (veg === 'All' || r.type === veg) && (r.title.toLowerCase().includes(search) || r.ingredients.join(' ').toLowerCase().includes(search)));
+
+      const search   = (document.getElementById('recipeSearch')?.value   || '').trim().toLowerCase();
+      const cat      = document.getElementById('recipeCategory')?.value   || 'All';
+      const veg      = document.getElementById('recipeVegFilter')?.value  || 'All';
+      const age      = document.getElementById('filterAgeGroup')?.value   || 'All';
+      const diff     = document.getElementById('filterDifficulty')?.value || 'All';
+      const cookTime = document.getElementById('filterCookTime')?.value   || 'All';
+      const vetAppr  = document.getElementById('filterVetApproved')?.value || 'All';
+
+      const recipes = HOME_RECIPES.filter(r => {
+        if (pet && !r.pet.includes(pet.type)) return false;
+        if (cat !== 'All' && r.cat !== cat) return false;
+        if (veg !== 'All' && r.type !== veg) return false;
+        if (age !== 'All' && r.age && !r.age.includes(age)) return false;
+        if (diff !== 'All' && r.diff !== diff) return false;
+        if (cookTime !== 'All') {
+          const t = parseInt(r.time) || 0;
+          if (cookTime === 'under15' && t >= 15) return false;
+          if (cookTime === '15to30' && (t < 15 || t > 30)) return false;
+          if (cookTime === 'over30' && t <= 30) return false;
+        }
+        if (vetAppr === 'Approved' && !r.vet) return false;
+        if (search) {
+          const haystack = (r.title + ' ' + (r.ingredients || []).join(' ')).toLowerCase();
+          if (!haystack.includes(search)) return false;
+        }
+        return true;
+      });
+
       renderHomemadeDashboard(pet, recipes); renderRecipeLibrary(recipes); renderRecipeMemory();
     }
     function renderHomemadeDashboard(pet, recipes) {

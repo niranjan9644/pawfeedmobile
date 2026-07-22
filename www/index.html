@@ -663,71 +663,88 @@
 
         <div id="homemadePetTabs" class="pet-tabs" style="margin-top:14px"></div>
 
-        <div class="card">
-          <label>Recipe Search</label>
-          <input id="recipeSearch" placeholder="Search chicken, rice, veg, snack..." oninput="renderHomemadeTab()" />
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-            <div>
-              <label style="margin: 0 0 6px 0">Category</label>
-              <select id="recipeCategory" onchange="renderHomemadeTab()">
-                <option value="All">All Categories</option>
-                <option value="Meal">Main Meal</option>
-                <option value="Snack">Treat / Snack</option>
-                <option value="Quick">Emergency Quick Meal</option>
-                <option value="Allergy">Allergy Friendly</option>
-                <option value="Budget">Budget Friendly</option>
-                <option value="Seasonal">Seasonal</option>
-              </select>
+        <div class="card" style="padding:16px">
+          <!-- Search row -->
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="flex:1;position:relative">
+              <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none">🔍</span>
+              <input id="recipeSearch"
+                placeholder="Search recipes, ingredients..."
+                oninput="renderHomemadeTab()"
+                style="padding-left:38px;width:100%" />
             </div>
-            <div>
-              <label style="margin: 0 0 6px 0">Diet Type</label>
-              <select id="recipeVegFilter" onchange="renderHomemadeTab()">
-                <option value="All">All</option>
-                <option value="Veg">Veg</option>
-                <option value="Non-Veg">Non-Veg</option>
-              </select>
-            </div>
+            <button id="recipeFilterBtn"
+              onclick="toggleRecipeFilters()"
+              style="flex-shrink:0;width:44px;height:44px;border-radius:14px;border:1.5px solid var(--border);background:var(--card-2);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:all 0.2s ease"
+              title="Filters">⚙️</button>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-            <div>
-              <label style="margin: 0 0 6px 0">Age Group</label>
-              <select id="filterAgeGroup" onchange="renderHomemadeTab()">
-                <option value="All">All Ages</option>
-                <option value="Baby">Baby/Puppy</option>
-                <option value="Adult">Adult</option>
-                <option value="Senior">Senior</option>
-              </select>
+          <!-- Collapsible filter panel -->
+          <div id="recipeFilterPanel" style="display:none;margin-top:12px;animation:fadeUp 0.2s ease">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div>
+                <label style="margin:0 0 6px 0">Category</label>
+                <select id="recipeCategory" onchange="renderHomemadeTab()">
+                  <option value="All">All Categories</option>
+                  <option value="Meal">Main Meal</option>
+                  <option value="Snack">Treat / Snack</option>
+                  <option value="Quick">Emergency Quick Meal</option>
+                  <option value="Allergy">Allergy Friendly</option>
+                  <option value="Budget">Budget Friendly</option>
+                  <option value="Seasonal">Seasonal</option>
+                </select>
+              </div>
+              <div>
+                <label style="margin:0 0 6px 0">Diet Type</label>
+                <select id="recipeVegFilter" onchange="renderHomemadeTab()">
+                  <option value="All">All</option>
+                  <option value="Veg">Veg</option>
+                  <option value="Non-Veg">Non-Veg</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label style="margin: 0 0 6px 0">Difficulty</label>
-              <select id="filterDifficulty" onchange="renderHomemadeTab()">
-                <option value="All">All Levels</option>
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-              </select>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+              <div>
+                <label style="margin:0 0 6px 0">Age Group</label>
+                <select id="filterAgeGroup" onchange="renderHomemadeTab()">
+                  <option value="All">All Ages</option>
+                  <option value="Baby">Baby/Puppy</option>
+                  <option value="Adult">Adult</option>
+                  <option value="Senior">Senior</option>
+                </select>
+              </div>
+              <div>
+                <label style="margin:0 0 6px 0">Difficulty</label>
+                <select id="filterDifficulty" onchange="renderHomemadeTab()">
+                  <option value="All">All Levels</option>
+                  <option value="Easy">Easy</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Hard">Hard</option>
+                </select>
+              </div>
             </div>
-          </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-            <div>
-              <label style="margin: 0 0 6px 0">Cook Time</label>
-              <select id="filterCookTime" onchange="renderHomemadeTab()">
-                <option value="All">All Times</option>
-                <option value="under15">Under 15 mins</option>
-                <option value="15to30">15 to 30 mins</option>
-                <option value="over30">Over 30 mins</option>
-              </select>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+              <div>
+                <label style="margin:0 0 6px 0">Cook Time</label>
+                <select id="filterCookTime" onchange="renderHomemadeTab()">
+                  <option value="All">All Times</option>
+                  <option value="under15">Under 15 mins</option>
+                  <option value="15to30">15 to 30 mins</option>
+                  <option value="over30">Over 30 mins</option>
+                </select>
+              </div>
+              <div>
+                <label style="margin:0 0 6px 0">Vet Approved</label>
+                <select id="filterVetApproved" onchange="renderHomemadeTab()">
+                  <option value="All">All Recipes</option>
+                  <option value="Approved">🩺 Vet Approved</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label style="margin: 0 0 6px 0">Vet Approved</label>
-              <select id="filterVetApproved" onchange="renderHomemadeTab()">
-                <option value="All">All Recipes</option>
-                <option value="Approved">🩺 Vet Approved</option>
-              </select>
-            </div>
+            <button onclick="resetRecipeFilters()"
+              style="margin-top:12px;width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--card-2);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer">
+              Reset Filters
+            </button>
           </div>
         </div>
 
