@@ -4092,7 +4092,35 @@
         return true;
       });
 
+    function updateRecipeAutocomplete() {
+      const dl = document.getElementById('recipeSuggestions');
+      if (!dl) return;
+      // Build a unique set of suggestion terms: recipe titles + individual ingredients
+      const terms = new Set();
+      HOME_RECIPES.forEach(r => {
+        // Add full title
+        if (r.title) terms.add(r.title);
+        // Add each individual ingredient word/phrase
+        if (Array.isArray(r.ingredients)) {
+          r.ingredients.forEach(ing => {
+            // Add the full ingredient phrase
+            terms.add(ing.toLowerCase().replace(/^[^a-z]+/, '').trim());
+            // Also add significant individual words (>3 chars) from the ingredient
+            ing.split(/\s+/).forEach(word => {
+              const clean = word.replace(/[^a-z]/gi, '').toLowerCase();
+              if (clean.length > 3) terms.add(clean);
+            });
+          });
+        }
+      });
+      dl.innerHTML = Array.from(terms)
+        .sort()
+        .map(t => `<option value="${t}">`)
+        .join('');
+    }
+
       renderHomemadeDashboard(pet, recipes); renderRecipeLibrary(recipes); renderRecipeMemory();
+      updateRecipeAutocomplete();
     }
     function renderHomemadeDashboard(pet, recipes) {
       const box = document.getElementById('homemadeDashboard'); if (!box) return;
