@@ -20,179 +20,31 @@
 <body>
 
 
-  <!-- ANIME SPLASH SCREEN -->
+  <!-- SPLASH SCREEN -->
   <div id="animeSplash" onclick="dismissAnimeSplash()">
-    <div class="anime-svg-wrap">
-      <svg width="100%" viewBox="0 0 430 335" xmlns="http://www.w3.org/2000/svg" role="img">
-        <title>PawFeed anime pet squad</title>
-        <!-- sky blobs -->
-        <ellipse cx="80" cy="60" rx="60" ry="30" fill="#fce4ff" opacity="0.7" />
-        <ellipse cx="370" cy="50" rx="65" ry="28" fill="#ddf4ff" opacity="0.7" />
-        <ellipse cx="215" cy="35" rx="75" ry="25" fill="#fff9dd" opacity="0.8" />
-        <!-- stars -->
-        <circle cx="40" cy="28" r="3" fill="#f9c74f" />
-        <circle cx="395" cy="22" r="3" fill="#f9c74f" />
-        <circle cx="120" cy="18" r="2" fill="#f9c74f" />
-        <circle cx="310" cy="15" r="2" fill="#f9c74f" />
-        <circle cx="215" cy="10" r="3" fill="#f9c74f" />
-        <!-- ground -->
-        <ellipse cx="215" cy="335" rx="195" ry="38" fill="#e8f5e9" />
-        <rect x="20" y="318" width="390" height="35" rx="6" fill="#e8f5e9" />
+    <div id="themeToggle" onclick="toggleDarkMode(); event.stopPropagation();">🌓</div>
+    <div class="ambient"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
 
-        <!-- === DOG (Bruno) x=43 === -->
-        <g style="animation:petBounce 2.1s ease infinite">
-          <ellipse cx="43" cy="255" rx="28" ry="32" fill="#f4a261" />
-          <path d="M69,265 Q89,245 79,228" fill="none" stroke="#e76f51" stroke-width="7" stroke-linecap="round" />
-          <ellipse cx="43" cy="210" rx="26" ry="24" fill="#f4a261" />
-          <path d="M19,202 Q5,228 23,240" fill="#e76f51" />
-          <path d="M67,202 Q81,228 63,240" fill="#e76f51" />
-          <ellipse cx="43" cy="220" rx="12" ry="9" fill="#fcbf49" />
-          <ellipse cx="43" cy="215" rx="6" ry="4" fill="#2d2d2d" />
-          <path d="M37,224 Q43,230 49,224" fill="none" stroke="#c1440e" stroke-width="1.5" stroke-linecap="round" />
-          <ellipse cx="33" cy="204" rx="9" ry="10" fill="white" />
-          <ellipse cx="53" cy="204" rx="9" ry="10" fill="white" />
-          <ellipse cx="34" cy="205" rx="6" ry="7" fill="#5c3317" />
-          <ellipse cx="54" cy="205" rx="6" ry="7" fill="#5c3317" />
-          <circle cx="35" cy="203" r="3" fill="#111" />
-          <circle cx="55" cy="203" r="3" fill="#111" />
-          <circle cx="37" cy="201" r="1.5" fill="white" />
-          <circle cx="57" cy="201" r="1.5" fill="white" />
-          <ellipse cx="23" cy="216" rx="6" ry="3" fill="#ffb3b3" opacity="0.7" />
-          <ellipse cx="63" cy="216" rx="6" ry="3" fill="#ffb3b3" opacity="0.7" />
-          <rect x="19" y="278" width="12" height="18" rx="6" fill="#f4a261" />
-          <rect x="55" y="278" width="12" height="18" rx="6" fill="#f4a261" />
-          <ellipse cx="25" cy="296" rx="7" ry="4" fill="#e76f51" />
-          <ellipse cx="61" cy="296" rx="7" ry="4" fill="#e76f51" />
-          <text x="43" y="322" text-anchor="middle" font-family="Nunito,sans-serif" font-size="10" font-weight="800"
-            fill="#7c4dff">Bruno</text>
-        </g>
-
-        <!-- === CAT (Luna) x=129 === -->
-        <g style="animation:petBounce 1.8s 0.3s ease infinite">
-          <ellipse cx="129" cy="258" rx="25" ry="32" fill="#b0bec5" />
-          <path d="M152,272 Q176,258 171,238 Q169,222 158,226" fill="none" stroke="#90a4ae" stroke-width="7"
-            stroke-linecap="round" />
-          <ellipse cx="129" cy="213" rx="22" ry="22" fill="#b0bec5" />
-          <polygon points="110,204 102,182 118,202" fill="#b0bec5" />
-          <polygon points="148,204 156,182 140,202" fill="#b0bec5" />
-          <polygon points="112,203 104,185 118,201" fill="#f8bbd9" />
-          <polygon points="146,203 154,185 140,201" fill="#f8bbd9" />
-          <ellipse cx="129" cy="222" rx="10" ry="7" fill="#cfd8dc" />
-          <path d="M125,217 L133,217 L129,221 Z" fill="#f48fb1" />
-          <line x1="104" y1="219" x2="119" y2="220" stroke="#888" stroke-width="1" />
-          <line x1="104" y1="223" x2="119" y2="223" stroke="#888" stroke-width="1" />
-          <line x1="154" y1="219" x2="139" y2="220" stroke="#888" stroke-width="1" />
-          <line x1="154" y1="223" x2="139" y2="223" stroke="#888" stroke-width="1" />
-          <path d="M124,226 Q129,231 134,226" fill="none" stroke="#c2185b" stroke-width="1.2" stroke-linecap="round" />
-          <ellipse cx="119" cy="207" rx="8" ry="9" fill="white" />
-          <ellipse cx="139" cy="207" rx="8" ry="9" fill="white" />
-          <ellipse cx="120" cy="208" rx="5" ry="6" fill="#00897b" />
-          <ellipse cx="140" cy="208" rx="5" ry="6" fill="#00897b" />
-          <circle cx="121" cy="206" r="2.5" fill="#001a18" />
-          <circle cx="141" cy="206" r="2.5" fill="#001a18" />
-          <circle cx="123" cy="204" r="1.2" fill="white" />
-          <circle cx="143" cy="204" r="1.2" fill="white" />
-          <ellipse cx="110" cy="217" rx="5" ry="2.5" fill="#ffb3b3" opacity="0.7" />
-          <ellipse cx="148" cy="217" rx="5" ry="2.5" fill="#ffb3b3" opacity="0.7" />
-          <ellipse cx="115" cy="293" rx="9" ry="6" fill="#b0bec5" />
-          <ellipse cx="143" cy="293" rx="9" ry="6" fill="#b0bec5" />
-          <text x="129" y="312" text-anchor="middle" font-family="Nunito,sans-serif" font-size="10" font-weight="800"
-            fill="#7c4dff">Luna</text>
-        </g>
-
-        <!-- === RABBIT (Mochi) x=215 === -->
-        <g style="animation:petBounce 2.4s 0.15s ease infinite">
-          <ellipse cx="215" cy="258" rx="24" ry="30" fill="#f8f8f8" />
-          <ellipse cx="215" cy="265" rx="15" ry="18" fill="#fff0f5" />
-          <ellipse cx="215" cy="210" rx="22" ry="22" fill="#f8f8f8" />
-          <ellipse cx="202" cy="178" rx="8" ry="24" fill="#f8f8f8" />
-          <ellipse cx="228" cy="178" rx="8" ry="24" fill="#f8f8f8" />
-          <ellipse cx="202" cy="178" rx="4.5" ry="19" fill="#ffb3c6" />
-          <ellipse cx="228" cy="178" rx="4.5" ry="19" fill="#ffb3c6" />
-          <ellipse cx="215" cy="220" rx="9" ry="6" fill="#fff0f5" />
-          <path d="M212,215 L218,215 L215,219 Z" fill="#f48fb1" />
-          <path d="M210,222 Q215,227 220,222" fill="none" stroke="#e91e8c" stroke-width="1.2" stroke-linecap="round" />
-          <ellipse cx="206" cy="204" rx="8" ry="9" fill="white" />
-          <ellipse cx="224" cy="204" rx="8" ry="9" fill="white" />
-          <ellipse cx="207" cy="205" rx="5" ry="6" fill="#7c4dff" />
-          <ellipse cx="225" cy="205" rx="5" ry="6" fill="#7c4dff" />
-          <circle cx="208" cy="203" r="2.5" fill="#1a0050" />
-          <circle cx="226" cy="203" r="2.5" fill="#1a0050" />
-          <circle cx="210" cy="201" r="1.2" fill="white" />
-          <circle cx="228" cy="201" r="1.2" fill="white" />
-          <ellipse cx="197" cy="214" rx="5" ry="2.5" fill="#ffb3b3" opacity="0.7" />
-          <ellipse cx="233" cy="214" rx="5" ry="2.5" fill="#ffb3b3" opacity="0.7" />
-          <ellipse cx="203" cy="291" rx="8" ry="5" fill="#f8f8f8" />
-          <ellipse cx="227" cy="291" rx="8" ry="5" fill="#f8f8f8" />
-          <text x="215" y="310" text-anchor="middle" font-family="Nunito,sans-serif" font-size="10" font-weight="800"
-            fill="#7c4dff">Mochi</text>
-        </g>
-
-        <!-- === PARROT (Kiwi) x=301 === -->
-        <g style="animation:petWiggle 2s 0.4s ease infinite; transform-origin:301px 265px">
-          <ellipse cx="301" cy="265" rx="24" ry="30" fill="#43a047" />
-          <path d="M279,256 Q257,272 269,290" fill="#388e3c" />
-          <path d="M323,256 Q345,272 333,290" fill="#2e7d32" />
-          <path d="M291,295 Q289,318 297,324" fill="none" stroke="#1b5e20" stroke-width="5" stroke-linecap="round" />
-          <path d="M301,295 Q303,321 301,326" fill="none" stroke="#43a047" stroke-width="4" stroke-linecap="round" />
-          <path d="M311,295 Q313,318 307,324" fill="none" stroke="#388e3c" stroke-width="5" stroke-linecap="round" />
-          <ellipse cx="301" cy="220" rx="22" ry="22" fill="#43a047" />
-          <ellipse cx="301" cy="209" rx="12" ry="9" fill="#fdd835" />
-          <ellipse cx="284" cy="222" rx="7" ry="5" fill="#e53935" />
-          <ellipse cx="318" cy="222" rx="7" ry="5" fill="#e53935" />
-          <path d="M293,228 Q301,238 309,228 Q301,224 293,228Z" fill="#f9a825" />
-          <ellipse cx="291" cy="214" rx="8" ry="9" fill="white" />
-          <ellipse cx="311" cy="214" rx="8" ry="9" fill="white" />
-          <ellipse cx="292" cy="215" rx="5" ry="6" fill="#0288d1" />
-          <ellipse cx="312" cy="215" rx="5" ry="6" fill="#0288d1" />
-          <circle cx="293" cy="213" r="2.5" fill="#01245a" />
-          <circle cx="313" cy="213" r="2.5" fill="#01245a" />
-          <circle cx="295" cy="211" r="1.2" fill="white" />
-          <circle cx="315" cy="211" r="1.2" fill="white" />
-          <rect x="275" y="295" width="52" height="6" rx="3" fill="#8d6e63" />
-          <line x1="293" y1="295" x2="287" y2="308" stroke="#8d6e63" stroke-width="2" stroke-linecap="round" />
-          <line x1="309" y1="295" x2="315" y2="308" stroke="#8d6e63" stroke-width="2" stroke-linecap="round" />
-          <text x="301" y="318" text-anchor="middle" font-family="Nunito,sans-serif" font-size="10" font-weight="800"
-            fill="#7c4dff">Kiwi</text>
-        </g>
-
-        <!-- === FISH bowl (Nemo) x=387 === -->
-        <g style="animation:petBounce 2.2s 0.6s ease infinite">
-          <ellipse cx="387" cy="268" rx="32" ry="40" fill="#b3e5fc" />
-          <ellipse cx="387" cy="234" rx="20" ry="7" fill="#e1f5fe" />
-          <ellipse cx="387" cy="308" rx="24" ry="7" fill="#81d4fa" />
-          <rect x="363" y="307" width="48" height="7" rx="3" fill="#81d4fa" />
-          <line x1="374" y1="247" x2="400" y2="247" stroke="white" stroke-width="2" stroke-linecap="round"
-            opacity="0.5" />
-          <path d="M371,308 Q365,288 371,272 Q377,256 371,242" fill="none" stroke="#66bb6a" stroke-width="4"
-            stroke-linecap="round" />
-          <path d="M403,308 Q409,292 403,276 Q397,261 403,248" fill="none" stroke="#43a047" stroke-width="3"
-            stroke-linecap="round" />
-          <circle cx="400" cy="242" r="3.5" fill="none" stroke="#4fc3f7" stroke-width="1.2" />
-          <circle cx="393" cy="235" r="2" fill="none" stroke="#4fc3f7" stroke-width="1" />
-          <ellipse cx="384" cy="274" rx="17" ry="12" fill="#ff7043" />
-          <path d="M399,274 Q412,263 409,274 Q412,285 399,274Z" fill="#ff5722" />
-          <path d="M377,262 Q382,253 389,262" fill="#ff8a65" />
-          <circle cx="375" cy="270" r="7" fill="white" />
-          <circle cx="376" cy="270" r="4.5" fill="#1565c0" />
-          <circle cx="377" cy="269" r="2" fill="#0a0a3a" />
-          <circle cx="379" cy="267" r="1" fill="white" />
-          <path d="M369,274 Q365,277 369,280" fill="none" stroke="#bf360c" stroke-width="1.5" stroke-linecap="round" />
-          <text x="387" y="326" text-anchor="middle" font-family="Nunito,sans-serif" font-size="10" font-weight="800"
-            fill="#7c4dff">Nemo</text>
-        </g>
-
-        <!-- hearts & sparkles -->
-        <text x="86" y="192" font-family="sans-serif" font-size="14" fill="#f06292">♥</text>
-        <text x="172" y="186" font-family="sans-serif" font-size="12" fill="#f06292">♥</text>
-        <text x="258" y="180" font-family="sans-serif" font-size="11" fill="#fdd835">✦</text>
-        <text x="344" y="186" font-family="sans-serif" font-size="10" fill="#80cbc4">✦</text>
-        <text x="344" y="192" font-family="sans-serif" font-size="11" fill="#fdd835">✦</text>
-      </svg>
+    <div class="mark-wrap">
+      <div class="levitate">
+        <svg class="ring-svg" width="132" height="132" viewBox="0 0 132 132">
+          <circle class="ring-track" cx="66" cy="66" r="60"/>
+          <circle class="ring-fill" cx="66" cy="66" r="60"/>
+        </svg>
+        <div class="paw-glow"></div>
+        <svg class="paw-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4.5 12.5c1.1 0 2-1.1 2-2.5s-.9-2.5-2-2.5-2 1.1-2 2.5.9 2.5 2 2.5z"/>
+          <path d="M9 9.5c1.1 0 2-1.2 2-2.75S10.1 4 9 4 7 5.2 7 6.75 7.9 9.5 9 9.5z"/>
+          <path d="M15 9.5c1.1 0 2-1.2 2-2.75S16.1 4 15 4s-2 1.2-2 2.75 1 2.75 2 2.75z"/>
+          <path d="M19.5 12.5c1.1 0 2-1.1 2-2.5s-.9-2.5-2-2.5-2 1.1-2 2.5.9 2.5 2 2.5z"/>
+          <path d="M12 11c-2.7 0-6 2.1-6 5.1 0 1.6 1.2 2.9 2.7 2.9.9 0 1.5-.4 2.2-.8.4-.3.9-.6 1.1-.6.3 0 .7.3 1.1.6.7.4 1.3.8 2.2.8 1.5 0 2.7-1.3 2.7-2.9 0-3-3.3-5.1-6-5.1z"/>
+        </svg>
+      </div>
     </div>
-    <div class="anime-title">PawFeed</div>
-    <div class="anime-sub">AI Pet Food Planner — Feeding made fun!</div>
-    <div class="anime-tap">Tap anywhere to continue ♥</div>
+
+    <div class="wordmark">PawFeed</div>
+    <div class="tagline">AI Pet Care<span class="dot"></span>Perfected</div>
+    <div class="anime-tap">Tap anywhere to continue</div>
   </div>
 
   <!-- LOADING SCREEN -->
@@ -306,6 +158,11 @@
 
       <label>Health Condition</label>
       <textarea id="mhealthCondition" placeholder="Example: healthy, allergy, digestion issue, obesity"></textarea>
+
+      <div style="display:flex;align-items:center;margin: 14px 0;">
+        <input type="checkbox" id="mpetIsPublic" style="width:20px;height:20px;margin-right:8px;cursor:pointer" />
+        <label for="mpetIsPublic" style="margin:0;font-weight:700;text-transform:none;letter-spacing:normal;font-size:14px;color:var(--text)">Make Pet Profile Public</label>
+      </div>
 
       <button class="primary-btn" onclick="savePetModal()">Save Pet Profile</button>
       <button class="secondary-btn" onclick="closePetModal()">Cancel</button>
@@ -516,10 +373,16 @@
 
       <!-- HOME TAB -->
       <div id="homeTab" class="screen tab-screen">
-        <div class="hero-card">
-          <h2 id="welcomeText">Hello!</h2>
-          <p id="todayPlan">Add your pet profile to get a personalized feeding plan.</p>
-          <span class="badge" id="healthBadge">Smart care enabled</span>
+        <!-- GRADIENT HERO CARD -->
+        <div class="hero-card" id="homeHeroCard">
+          <div class="hero-card-left">
+            <h2 id="welcomeText">Hello!</h2>
+            <p id="todayPlan">Add your pet profile to get a personalized feeding plan.</p>
+            <span class="badge" id="healthBadge" style="backdrop-filter:blur(8px); background:rgba(255,255,255,0.1)">Smart care enabled</span>
+          </div>
+          <div class="hero-card-right">
+            <div class="hero-pet-avatar" id="heroPetAvatar">🐾</div>
+          </div>
         </div>
 
         <!-- STREAK BANNER -->
@@ -532,8 +395,44 @@
           <div class="streak-count" id="streakCount">0</div>
         </div>
 
+        <!-- PET HEALTH SCORE RING -->
+        <div class="card" id="healthScoreSection" style="display:none; text-align:center; padding:18px;">
+          <div style="display:flex; align-items:center; justify-content:center; gap:20px;">
+            <div class="score-ring-wrap" style="position:relative; width:90px; height:90px;">
+              <svg width="90" height="90" viewBox="0 0 90 90" style="transform:rotate(-90deg);">
+                <circle cx="45" cy="45" r="40" fill="none" stroke="var(--card-2)" stroke-width="6"></circle>
+                <circle cx="45" cy="45" r="40" fill="none" id="healthScoreCircle" stroke="var(--orange)" stroke-width="6"
+                  stroke-dasharray="251.2" stroke-dashoffset="251.2" style="transition: stroke-dashoffset 0.8s ease-out;"></circle>
+              </svg>
+              <div id="healthScoreVal" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Nunito',sans-serif; font-size:22px; font-weight:900; color:var(--dark)">0</div>
+            </div>
+            <div style="text-align:left;">
+              <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px;">Health Score</div>
+              <h3 id="healthInsightText" style="font-weight:900; color:var(--dark); margin:2px 0 0 0; font-size:16px;">Healthy & Thriving</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUICK ACTION ROW -->
+        <div class="quick-action-row" id="homeQuickActions" style="display:none; display:flex; justify-content:space-between; gap:8px; margin: 12px 0;">
+          <button class="quick-action-pill" onclick="quickActionLog('fed')">🍽️ Feed</button>
+          <button class="quick-action-pill" onclick="quickActionLog('water')">💧 Water</button>
+          <button class="quick-action-pill" onclick="quickActionLog('mood')">😊 Mood</button>
+          <button class="quick-action-pill" onclick="openQuickWeightModal()">⚖️ Weight</button>
+        </div>
+
+        <!-- TODAY'S TIMELINE -->
+        <div class="card" id="homeTimelineSection" style="display:none; padding:18px;">
+          <div class="section-header" style="margin-bottom:12px;">
+            <h4 class="section-title" style="font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px;">Today's Timeline</h4>
+          </div>
+          <div class="timeline-scroll" id="timelineScrollBox">
+            <!-- Dynamic items rendered by JS -->
+          </div>
+        </div>
+
         <!-- STATS ROW -->
-        <div class="stats-row">
+        <div class="stats-row" id="homeStatsRow">
           <div class="stat-card">
             <div class="stat-icon">🍽️</div>
             <div class="stat-val" id="statFeedings">0</div>
@@ -551,16 +450,39 @@
           </div>
         </div>
 
+        <!-- UPCOMING REMINDER BANNER -->
+        <div class="banner-card" id="upcomingReminderBanner" style="display:none; background:linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%); border-left:4px solid var(--orange); cursor:pointer;" onclick="openTab('careplanner')">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:20px;">⏰</span>
+            <div style="flex:1;">
+              <b id="reminderBannerText" style="color:var(--dark); font-size:14px;">Next reminder</b>
+              <div id="reminderBannerTime" style="font-size:12px; color:var(--muted); margin-top:2px;">In some time</div>
+            </div>
+            <span style="color:var(--orange); font-size:16px;">➔</span>
+          </div>
+        </div>
+
         <!-- Shortcut to Tracker & Insights -->
         <div style="text-align: center; margin: 12px 0 16px 0;">
           <button class="secondary-btn" onclick="openTab('tracker')"
-            style="padding: 10px 16px; border-radius: 14px; font-weight:800; font-size:13px; display:inline-flex; align-items:center; gap:6px; background:var(--pill-bg); color:var(--pill-color); border:none; width:auto; margin:0 auto; cursor:pointer">
+            style="padding: 10px 16px; border-radius: 14px; font-weight:800; font-size:13px; display:inline-flex; align-items:center; gap:6px; background:var(--pill-bg); color:var(--teal); border:1.5px solid var(--teal); width:auto; margin:0 auto; cursor:pointer">
             📈 View Pet Tracker & Insights
           </button>
         </div>
 
         <h3 class="section-title">My Pets</h3>
         <div id="petPreview"></div>
+
+        <!-- DAILY PET TIP -->
+        <div class="card" id="dailyPetTipCard" style="border-left: 4px solid var(--teal); padding: 18px; cursor:pointer; margin-top: 14px;" onclick="openTab('care')">
+          <div style="display:flex; align-items:flex-start; gap:12px;">
+            <span style="font-size:24px;">💡</span>
+            <div style="flex:1;">
+              <div style="font-size:11px; font-weight:700; color:var(--teal); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:4px;">Daily Pet Tip</div>
+              <p id="dailyTipText" style="font-size:13px; line-height:1.5; color:var(--text); margin:0;"></p>
+            </div>
+          </div>
+        </div>
 
         <!-- MISSED MEALS -->
         <div id="missedMealsSection" class="hidden">
@@ -644,6 +566,11 @@
       <div id="communityTab" class="screen tab-screen hidden">
         <h2 style="font-weight:900;color:var(--dark)">👥 Pet Community</h2>
         <p class="subtitle">Share pet photos, post updates, and save community homemade recipes.</p>
+        
+        <div class="combo-sub-tabs" style="margin-bottom:16px">
+          <div class="combo-sub-tab active" id="feedTab-all" onclick="switchFeedTab('all')">🌍 All Posts</div>
+          <div class="combo-sub-tab" id="feedTab-following" onclick="switchFeedTab('following')">👥 Following</div>
+        </div>
         <div class="card">
           <label>Post Type</label>
           <select id="communityPostType">
@@ -1010,6 +937,17 @@
       <!-- ADD/EDIT RECIPE MODAL -->
       <div id="recipeModal" class="modal-overlay hidden" style="z-index: 10000;">
         <div class="modal-content" style="max-height:85vh;overflow-y:auto;border-radius:24px;padding:24px">
+
+      <!-- PUBLIC PET PROFILE SCREEN MODAL -->
+      <div id="publicPetProfileScreen" class="modal-overlay hidden" style="z-index: 10001;">
+        <div class="modal-content" style="max-height:85vh;overflow-y:auto;border-radius:24px;padding:24px;background:var(--card);max-width:480px;width:90%;margin:auto;position:relative">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 style="font-weight:900;color:var(--dark);margin:0">Pet Profile</h3>
+            <button class="close-btn" onclick="closePublicProfile()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--muted)">&times;</button>
+          </div>
+          <div id="publicProfileContent"></div>
+        </div>
+      </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 id="recipeModalTitle" style="font-weight:900;color:var(--dark);margin:0">Add Recipe</h3>
             <button class="close-btn" onclick="closeRecipeModal()"

@@ -196,7 +196,8 @@
       try {
         const [
           petsRes, logsRes, stockRes, expensesRes, postsRes, cartRes, scansRes, tasksRes, ordersRes,
-          moodsRes, medsRes, vetsRes, sleepsRes, galleryRes, weightsRes, recipesRes, profileRes
+          moodsRes, medsRes, vetsRes, sleepsRes, galleryRes, weightsRes, recipesRes, profileRes,
+          reactionsRes, commentsRes, followsRes
         ] = await Promise.all([
           window.supabaseClient.from('pets').select('*').eq('user_id', userId),
           window.supabaseClient.from('feeding_logs').select('*').eq('user_id', userId),
@@ -214,8 +215,15 @@
           window.supabaseClient.from('pet_gallery').select('*').eq('user_id', userId),
           window.supabaseClient.from('weight_history').select('*').eq('user_id', userId),
           window.supabaseClient.from('custom_recipes').select('*').eq('user_id', userId),
-          window.supabaseClient.from('user_profiles').select('*').eq('id', userId).maybeSingle()
+          window.supabaseClient.from('user_profiles').select('*').eq('id', userId).maybeSingle(),
+          window.supabaseClient.from('reactions').select('*').then(res => res, err => ({data:[]})),
+          window.supabaseClient.from('comments').select('*').then(res => res, err => ({data:[]})),
+          window.supabaseClient.from('follows').select('*').then(res => res, err => ({data:[]}))
         ]);
+
+        if (reactionsRes && reactionsRes.data) pawCache.reactions = reactionsRes.data;
+        if (commentsRes && commentsRes.data) pawCache.comments = commentsRes.data;
+        if (followsRes && followsRes.data) pawCache.follows = followsRes.data;
 
         if (petsRes.data) {
           pawCache.pets = petsRes.data.map(p => {
@@ -230,7 +238,8 @@
               health: p.health,
               waterGoal: parseFloat(p.water_goal),
               activityLevel: p.activity_level,
-              breedTraits: p.breed_traits || null
+              breedTraits: p.breed_traits || null,
+              isPublic: p.is_public || false
             };
             if (!petObj.breedTraits && (p.species === 'Dog' || p.species === 'Cat') && breedCache[p.species]) {
               const found = breedCache[p.species].find(b => b.name.toLowerCase() === p.breed.toLowerCase());
@@ -284,13 +293,15 @@
         if (postsRes.data) {
           pawCache.communityPosts = postsRes.data.map(p => ({
             id: p.id,
-            user: p.user_id === userId ? (currentUser.user_metadata?.display_name || 'Me') : 'Pet Parent',
-            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80',
-            content: p.content,
+            user_id: p.user_id,
+            author: p.user_id === userId ? (currentUser.user_metadata?.display_name || 'Me') : 'Pet Parent',
+            petName: 'Pet',
+            petIcon: '🐾',
+            caption: p.content,
             image: p.image_url,
-            time: p.created_at,
-            likes: 0,
-            comments: []
+            date: p.created_at,
+            type: p.content && p.content.toLowerCase().includes('recipe') ? 'recipe' : 'photo',
+            synced: true
           }));
         }
 
@@ -667,7 +678,8 @@
             health: p.health || '',
             water_goal: parseFloat(p.waterGoal || 500),
             activity_level: p.activityLevel || 'Moderate',
-            breed_traits: p.breedTraits || null
+            breed_traits: p.breedTraits || null,
+            is_public: p.isPublic || false
           };
           if (p.id) payload.id = p.id;
           const { data, error } = await window.supabaseClient.from('pets').upsert(payload).select('id').single();
@@ -1093,6 +1105,7 @@
         document.getElementById('mfoodPref').value = p.foodPref;
         document.getElementById('mpetActivityLevel').value = p.activityLevel || 'Moderate (Normal)';
         document.getElementById('mhealthCondition').value = p.health;
+        document.getElementById('mpetIsPublic').checked = p.isPublic || false;
         selectedModalColor = p.color || '#FFD5A8';
  
         // Load avatar
@@ -1112,6 +1125,7 @@
         document.getElementById('mfoodPref').value = 'Dry Food';
         document.getElementById('mpetActivityLevel').value = 'Moderate (Normal)';
         document.getElementById('mhealthCondition').value = '';
+        document.getElementById('mpetIsPublic').checked = false;
         document.getElementById('modalAvatarPreview').innerHTML = '<span id="modalAvatarEmoji">🐾</span>';
       }
 
@@ -1194,6 +1208,7 @@
         activityLevel: document.getElementById('mpetActivityLevel').value,
         health: document.getElementById('mhealthCondition').value.trim(),
         color: selectedModalColor,
+        isPublic: document.getElementById('mpetIsPublic').checked,
         avatar: avatarData || existingAvatar || null,
         gallery: idx >= 0 ? (existingPets[idx]?.gallery || []) : [],
         weightHistory: idx >= 0 ? (existingPets[idx]?.weightHistory || []) : [],
@@ -2064,14 +2079,306 @@
       renderHomemadeTab();
       renderCommunity();
       renderMarketplace();
-      renderGameTab();
-      renderVisionHistory();
+      if (typeof renderGameTab === 'function') renderGameTab();
+      if (typeof renderVisionHistory === 'function') renderVisionHistory();
       updateHomeStats(pets, activeIdx, noPet);
-
-      // Custom Widgets Render
       if (typeof renderDailyChecklist === 'function') renderDailyChecklist();
       if (typeof renderExpenseTracker === 'function') renderExpenseTracker();
       if (typeof renderStockTracker === 'function') renderStockTracker();
+    }
+
+    // ==================== DAILY PET CARE TIPS ====================
+    const PET_CARE_TIPS = [
+      "Ensure fresh drinking water is always available in clean bowls to prevent UTIs. 💧",
+      "Feed high-quality protein appropriate for your pet's life stage and weight. 🍗",
+      "Keep toxic foods like chocolate, onions, garlic, grapes, and raisins out of reach. 🚫",
+      "Regular walks and interactive play keep your pet mentally stimulated and fit. 🚶",
+      "Brush your pet's teeth regularly to prevent dental disease and bad breath. 🪥",
+      "Trim your pet's nails every 3-4 weeks to keep them walking comfortably. 💅",
+      "Create a safe, quiet space where your pet can retreat during loud events like storms. ⛈️",
+      "Schedule veterinary checkups annually (or bi-annually for seniors) to catch issues early. 🏥",
+      "Keep vaccinations and parasite prevention up to date to protect against heartworm. 🐛",
+      "A healthy pet weight prolongs life expectancy and reduces joint strain. ⚖️",
+      "Regular grooming helps monitor skin conditions, hot spots, or ticks early. 🧼",
+      "Never give human medications to pets unless specifically instructed by your vet. 💊",
+      "Clean litter boxes daily; cats are fastidious and value clean bathrooms. 🧹",
+      "Introduce new food gradually over 7 days to prevent digestive upset. 🍲",
+      "Interactive puzzle toys are great for senior pets to keep their brains sharp. 🧩",
+      "Spaying or neutering reduces the risk of urinary/reproductive cancers. ✂️",
+      "Check pet paws regularly for cuts, thorns, or raw pads during hot/cold seasons. 🐾",
+      "Keep household chemicals and cleaning products stored securely in locked cabinets. 🧴",
+      "Provide vertical space (perches, cat trees) for cats to satisfy climbing instincts. 🧗",
+      "Log your pet's daily meals and water intake to establish healthy baselines. 📝",
+      "Microchip your pets and keep registration info updated in case they get lost. 🏷️",
+      "Avoid giving cooked bones to dogs; they can splinter and damage intestines. 🍖",
+      "Ensure indoor plants are pet-safe; lilies, sago palms, and ivy are highly toxic. 🌿",
+      "Limit high-calorie treats to less than 10% of your pet's total daily calorie intake. 🍪",
+      "Regular brushing helps minimize shedding, hairballs, and matting. 🐈",
+      "Keep garbage bins secured; food scraps can cause pancreatitis or obstruction. 🗑️",
+      "Watch for changes in behavior (lethargy, hiding) as pets hide pain very well. 🕵️",
+      "Make sure collars fit comfortably; you should easily fit two fingers underneath. 🏷️",
+      "Provide clean chew toys to naturally scrape plaque off your pet's teeth. 🦴",
+      "Positive reinforcement (praise, treats) is the best way to train any behavior. 🌟"
+    ];
+
+    function calculateHealthScore(pet, stats, activeIdx) {
+      if (!pet) return 80;
+      
+      // 1. Streak Score (40pts max)
+      const streak = calculateStreak();
+      const streakScore = Math.min(40, streak * 10);
+      
+      // 2. Water Score (30pts max)
+      const waterPct = stats.waterPct || 0;
+      const waterScore = Math.min(30, (waterPct / 100) * 30);
+      
+      // 3. Mood Score (20pts max)
+      const mood = stats.mood || '—';
+      let moodScore = 15;
+      if (mood === '😄' || mood === '😐' || mood === '⚡') moodScore = 20;
+      else if (mood === '😴') moodScore = 15;
+      else if (mood === '😟') moodScore = 10;
+      else if (mood === '😡' || mood === '🤒') moodScore = 5;
+      
+      // 4. Weight Score (10pts max)
+      let weightScore = 10;
+      if (pet.weightHistory && pet.weightHistory.length >= 2) {
+        const history = pet.weightHistory;
+        const currentW = parseFloat(history[history.length - 1].weight || pet.weight || 0);
+        const prevW = parseFloat(history[history.length - 2].weight || pet.weight || 0);
+        if (prevW > 0) {
+          const diffPct = Math.abs(currentW - prevW) / prevW;
+          if (diffPct <= 0.05) weightScore = 10;
+          else if (diffPct <= 0.10) weightScore = 7;
+          else weightScore = 5;
+        }
+      }
+      
+      const totalScore = Math.round(streakScore + waterScore + moodScore + weightScore);
+      
+      // Determine lowest component for advice
+      let lowestComponent = 'water';
+      let lowestVal = waterScore / 30;
+      
+      if ((streakScore / 40) < lowestVal) {
+        lowestComponent = 'streak';
+        lowestVal = streakScore / 40;
+      }
+      if ((moodScore / 20) < lowestVal) {
+        lowestComponent = 'mood';
+        lowestVal = moodScore / 20;
+      }
+      
+      let insight = `${pet.name} is thriving! 🌟`;
+      if (totalScore < 80) {
+        if (lowestComponent === 'water') {
+          insight = `${pet.name} needs more water 💧`;
+        } else if (lowestComponent === 'streak') {
+          insight = `Keep up the daily routine streak! 🔥`;
+        } else if (lowestComponent === 'mood') {
+          insight = `Give ${pet.name} some extra love today 😊`;
+        }
+      }
+      
+      return { totalScore, insight };
+    }
+
+    function quickActionLog(type) {
+      const pets = getPets();
+      const activeIdx = getActivePetIdx();
+      const pet = pets[activeIdx];
+      
+      if (!pet && !isNoPet()) { showToast('No active pet selected'); return; }
+      
+      if (type === 'fed' || type === 'water') {
+        const note = type === 'fed' ? 'Meal fed' : 'Water refilled';
+        const entry = {
+          id: Date.now(),
+          type,
+          note,
+          timestamp: new Date().toISOString(),
+          petName: pet ? pet.name : 'General',
+          petIdx: pet ? activeIdx : -1
+        };
+        
+        const log = getLog();
+        log.unshift(entry);
+        if (log.length > 200) log.splice(200);
+        saveLog(log);
+        
+        if (type === 'fed') {
+          if (typeof deductStockAutomatically === 'function') {
+            deductStockAutomatically(note, 'food');
+          }
+        }
+        
+        showToast((type === 'fed' ? 'Feed' : 'Water') + ' logged successfully! ✅');
+        refreshAllUI();
+      } else if (type === 'mood') {
+        openLogModal('mood');
+      }
+    }
+
+    function openQuickWeightModal() {
+      const modal = document.getElementById('weightModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        const input = document.getElementById('quickWeight');
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+      }
+    }
+
+    function renderTodayTimeline(pets, activeIdx, noPet) {
+      const box = document.getElementById('timelineScrollBox');
+      const section = document.getElementById('homeTimelineSection');
+      if (!box || !section) return;
+      
+      if (noPet || pets.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      
+      section.style.display = 'block';
+      const tasks = getCareTasks();
+      const petTasks = tasks.filter(t => t.petIdx === activeIdx);
+      const today = todayStr();
+      const dayTasks = petTasks.filter(t => taskAppliesToDate(t, today));
+      
+      if (dayTasks.length === 0) {
+        box.innerHTML = `<div style="padding:10px 0; font-size:13px; color:var(--muted); font-style:italic; text-align:center; width:100%;">No tasks today — add some in Planner 📅</div>`;
+        return;
+      }
+      
+      dayTasks.sort((a, b) => {
+        const timeA = a.dateTime.slice(11);
+        const timeB = b.dateTime.slice(11);
+        return timeA.localeCompare(timeB);
+      });
+      
+      box.innerHTML = dayTasks.map(t => {
+        const isCompleted = t.completedDates && t.completedDates.includes(today);
+        const timeStr = formatTimeFromDateTime(t.dateTime);
+        const hour = parseInt(t.dateTime.slice(11, 13));
+        
+        let period = '🌅 Morning';
+        if (hour >= 17) period = '🌙 Evening';
+        else if (hour >= 12) period = '☀️ Afternoon';
+        
+        let icon = '🔔';
+        const titleLower = t.title.toLowerCase();
+        if (titleLower.includes('feed') || titleLower.includes('meal') || titleLower.includes('food') || titleLower.includes('dinner')) icon = '🍽️';
+        else if (titleLower.includes('water')) icon = '💧';
+        else if (titleLower.includes('walk') || titleLower.includes('play')) icon = '🚶';
+        else if (titleLower.includes('med') || titleLower.includes('pill') || titleLower.includes('vet')) icon = '💊';
+        else if (titleLower.includes('sleep') || titleLower.includes('bed')) icon = '😴';
+        
+        return `
+          <div class="timeline-item ${isCompleted ? 'completed' : ''}" onclick="toggleTimelineTaskComplete('${t.id}')">
+            <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">${period}</span>
+            <span style="font-size:24px;margin:2px 0;">${isCompleted ? '✅' : icon}</span>
+            <b style="font-size:13px;color:var(--dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">${t.title}</b>
+            <span style="font-size:11px;color:var(--muted)">${timeStr}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleTimelineTaskComplete(id) {
+      const today = todayStr();
+      const tasks = getCareTasks();
+      const t = tasks.find(x => x.id == id);
+      if (!t) return;
+      
+      t.completedDates = t.completedDates || [];
+      if (t.completedDates.includes(today)) {
+        t.completedDates = t.completedDates.filter(d => d !== today);
+        showToast('Task uncompleted');
+      } else {
+        t.completedDates.push(today);
+        showToast('Task completed! 🎉');
+        if (t.title.toLowerCase().includes('feed') || t.title.toLowerCase().includes('meal')) {
+          if (typeof deductStockAutomatically === 'function') {
+            deductStockAutomatically(t.title, 'food');
+          }
+        }
+      }
+      saveCareTasks(tasks);
+      refreshAllUI();
+    }
+
+    function renderReminderBanner(pets, activeIdx, noPet) {
+      const banner = document.getElementById('upcomingReminderBanner');
+      const textEl = document.getElementById('reminderBannerText');
+      const timeEl = document.getElementById('reminderBannerTime');
+      if (!banner || !textEl || !timeEl) return;
+      
+      if (noPet || pets.length === 0) {
+        banner.style.display = 'none';
+        return;
+      }
+      
+      const pet = pets[activeIdx];
+      const tasks = getCareTasks();
+      const petTasks = tasks.filter(t => t.petIdx === activeIdx);
+      const now = new Date();
+      
+      let nextTask = null;
+      let minDiff = Infinity;
+      
+      petTasks.forEach(t => {
+        const datesToTry = [todayStr(), new Date(now.getTime() + 86400000).toISOString().slice(0, 10)];
+        datesToTry.forEach(dateStr => {
+          if (taskAppliesToDate(t, dateStr)) {
+            const isCompleted = t.completedDates && t.completedDates.includes(dateStr);
+            if (!isCompleted) {
+              const timePart = t.dateTime.slice(11);
+              const taskTime = new Date(`${dateStr}T${timePart}`);
+              const diff = taskTime - now;
+              if (diff > 0 && diff < minDiff) {
+                minDiff = diff;
+                nextTask = { task: t, time: taskTime };
+              }
+            }
+          }
+        });
+      });
+      
+      if (!nextTask) {
+        banner.style.display = 'none';
+        return;
+      }
+      
+      banner.style.display = 'block';
+      const diffMin = Math.round(minDiff / 60000);
+      let durationStr = '';
+      if (diffMin >= 60) {
+        const h = Math.floor(diffMin / 60);
+        const m = diffMin % 60;
+        durationStr = `${h}h ${m}m`;
+      } else {
+        durationStr = `${diffMin}m`;
+      }
+      
+      textEl.textContent = `${pet.name}'s ${nextTask.task.title}`;
+      timeEl.textContent = `Scheduled in ${durationStr}`;
+    }
+
+    function renderDailyPetTip() {
+      const card = document.getElementById('dailyPetTipCard');
+      const textEl = document.getElementById('dailyTipText');
+      if (!card || !textEl) return;
+      
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 0);
+      const diff = now - start;
+      const oneDay = 1000 * 60 * 60 * 24;
+      const dayOfYear = Math.floor(diff / oneDay);
+      const tipIdx = dayOfYear % PET_CARE_TIPS.length;
+      
+      textEl.textContent = PET_CARE_TIPS[tipIdx];
     }
 
     // ==================== HOME STATS ====================
@@ -2081,42 +2388,78 @@
       document.getElementById('statWater').textContent = stats.waterPct + '%';
       document.getElementById('statMood').textContent = stats.mood;
 
+      // Quick Actions & Health Score elements
+      const actions = document.getElementById('homeQuickActions');
+      const healthSec = document.getElementById('healthScoreSection');
+      
+      if (!noPet && pets.length > 0) {
+        if (actions) actions.style.display = 'flex';
+        
+        // Calculate health score & render circle
+        const pet = pets[activeIdx];
+        const { totalScore, insight } = calculateHealthScore(pet, stats, activeIdx);
+        
+        const circle = document.getElementById('healthScoreCircle');
+        const valText = document.getElementById('healthScoreVal');
+        const insightText = document.getElementById('healthInsightText');
+        
+        if (healthSec && circle && valText) {
+          healthSec.style.display = 'block';
+          valText.textContent = totalScore;
+          const offset = 251.2 - (totalScore / 100) * 251.2;
+          circle.style.strokeDashoffset = offset;
+          
+          if (totalScore >= 80) {
+            circle.style.stroke = 'var(--teal)';
+          } else if (totalScore >= 50) {
+            circle.style.stroke = 'var(--orange)';
+          } else {
+            circle.style.stroke = '#EF5350';
+          }
+          if (insightText) insightText.textContent = insight;
+        }
+        
+        // Render timeline
+        renderTodayTimeline(pets, activeIdx, noPet);
+        // Render upcoming banner
+        renderReminderBanner(pets, activeIdx, noPet);
+      } else {
+        if (actions) actions.style.display = 'none';
+        if (healthSec) healthSec.style.display = 'none';
+        const timeline = document.getElementById('homeTimelineSection');
+        if (timeline) timeline.style.display = 'none';
+        const banner = document.getElementById('upcomingReminderBanner');
+        if (banner) banner.style.display = 'none';
+      }
+
+      // Render daily tip always
+      renderDailyPetTip();
+
       // Streak
       const s = getSettings();
       const streak = calculateStreak();
       const streakBanner = document.getElementById('streakBanner');
       if (streak >= 2 && s.showStreaks !== false && !noPet && pets.length > 0) {
         streakBanner.classList.remove('hidden');
-        document.getElementById('streakCount').textContent = streak;
+        const sc = document.getElementById('streakCount');
+        sc.textContent = streak;
+        if (streak >= 7) {
+          sc.classList.add('streak-shimmer');
+        } else {
+          sc.classList.remove('streak-shimmer');
+        }
         document.getElementById('streakTitle').textContent = streak >= 7 ? '🏆 ' + streak + '-Day Streak!' : '🔥 Feeding Streak!';
         document.getElementById('streakSub').textContent = streak >= 7 ? 'Amazing consistency!' : 'Keep up the great work!';
       } else {
         streakBanner.classList.add('hidden');
-      }
-
-      // Missed meals
-      const missed = getMissedMeals();
-      const missedSection = document.getElementById('missedMealsSection');
-      const missedBox = document.getElementById('missedMealsBox');
-      if (missed.length > 0 && !noPet && pets.length > 0) {
-        missedSection.classList.remove('hidden');
-        missedBox.innerHTML = missed.map(m => `
-      <div class="missed-meal-card">
-        <div class="missed-icon">${m.icon}</div>
-        <div class="missed-meal-info">
-          <h4>${m.label} Missed</h4>
-          <p>Was scheduled at ${m.time}</p>
-        </div>
-        <button class="small-btn" onclick="openLogModal('fed')" style="margin:0;font-size:11px">Log Now</button>
-      </div>`).join('');
-      } else {
-        missedSection.classList.add('hidden');
       }
     }
 
     // ==================== HOME PREVIEW ====================
     function renderHomePreview(pets, activeIdx, noPet) {
       const preview = document.getElementById('petPreview');
+      const heroCard = document.getElementById('homeHeroCard');
+      
       if (noPet) {
         document.getElementById('todayPlan').innerText = 'Browsing general pet care tips.';
         document.getElementById('healthBadge').innerText = 'General mode';
@@ -2133,19 +2476,30 @@
       document.getElementById('todayPlan').innerText = pet.name + '\'s next care plan is ready.';
       document.getElementById('healthBadge').innerText = pet.health ? 'Health-aware plan' : 'Healthy routine plan';
 
-      const avatarHtml = pet.avatar
-        ? `<img src="${pet.avatar}" alt="${pet.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-        : `<span style="font-size:28px">${PET_ICONS[pet.type] || '🐾'}</span>`;
+      // Set pet color theme variable dynamically
+      document.documentElement.style.setProperty('--pet-color', pet.color || '#F5A623');
+      
+      const avatarEl = document.getElementById('heroPetAvatar');
+      if (avatarEl) {
+        avatarEl.style.boxShadow = `0 0 30px ${(pet.color || '#F5A623')}66`;
+        avatarEl.style.borderColor = pet.color || '#F5A623';
+        if (pet.avatar) {
+          avatarEl.innerHTML = `<img src="${pet.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+        } else {
+          avatarEl.innerHTML = PET_ICONS[pet.type] || '🐾';
+        }
+      }
 
       preview.innerHTML = `
-    <div class="pet-profile-header" style="background: #FFD5A8;position:relative;z-index:1">
-        <div class="pet-profile-name">${pet.name} <span class="active-dot" style="background:#fff"></span></div>
-        <div class="pet-profile-sub">${pet.type} · ${pet.breed}</div>
-        <div class="pet-profile-sub">Age: ${pet.age} yrs · ${pet.weight} kg</div>
+      <div class="pet-profile-header" style="background:var(--card); border:1px solid var(--border); border-radius:20px; box-shadow:var(--shadow); position:relative; z-index:1; padding:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div class="pet-profile-name" style="font-family:'Nunito',sans-serif; font-size:20px; font-weight:900; color:var(--dark)">${pet.name} <span class="active-dot" style="background:var(--teal)"></span></div>
+          <div class="pet-profile-sub" style="font-size:13px; color:var(--text); margin-top:4px;">${pet.type} · ${pet.breed}</div>
+          <div class="pet-profile-sub" style="font-size:12px; color:var(--muted); margin-top:2px;">Age: ${pet.age} yrs · ${pet.weight} kg</div>
+        </div>
+        <button class="small-btn" onclick="openGallery(${activeIdx})" style="background:var(--pill-bg);color:var(--orange);border:1px solid var(--border);font-size:12px; font-weight:800; padding:8px 14px;">📷 Gallery</button>
       </div>
-      <button class="small-btn" onclick="openGallery(${activeIdx})" style="background:rgba(255,255,255,0.25);color:white;border:none;font-size:12px">📷 Gallery</button>
-    </div>
-    ${pets.length > 1 ? `<p style="font-size:13px;color:var(--muted);text-align:center;margin-top:4px">+${pets.length - 1} more pet${pets.length > 2 ? 's' : ''} — manage in <b onclick="openTab('profile')" style="cursor:pointer;color:var(--orange)">Profile</b></p>` : ''}`;
+      ${pets.length > 1 ? `<p style="font-size:13px;color:var(--muted);text-align:center;margin-top:10px">+${pets.length - 1} more pet${pets.length > 2 ? 's' : ''} — manage in <b onclick="openTab('profile')" style="cursor:pointer;color:var(--orange)">Profile</b></p>` : ''}`;
     }
 
     function shadeColor(color, percent) {
@@ -2828,18 +3182,22 @@
       try {
         for (let i = 0; i < posts.length; i++) {
           const post = posts[i];
-          if (post.id) continue;
+          if (post.id && post.synced) continue;
           const { data, error } = await window.supabaseClient.from('community_posts').insert({
             user_id: userId,
-            content: post.content || '',
-            image_url: post.image || null
+            content: post.caption || post.content || '',
+            image_url: post.image || post.image_url || null
           }).select('id').single();
-          if (!error && data) post.id = data.id;
+          if (!error && data) {
+            post.id = data.id;
+            post.synced = true;
+          }
         }
       } catch (err) {
         console.error("Error syncing community posts:", err);
       }
     }
+
 
     function getCart() {
       return pawCache.cart || [];
@@ -2888,7 +3246,11 @@
       }
     }
 
-    // ==================== COMMUNITY FEATURES ====================
+    // ==================== COMMUNITY / SOCIAL FEATURES ====================
+    let activeFeedTab = 'all';
+    let activeCommentsPostId = null;
+    let replyParentId = null;
+
     function handleCommunityImage(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -2899,6 +3261,7 @@
       };
       reader.readAsDataURL(file);
     }
+
     function addCommunityPost() {
       const type = document.getElementById('communityPostType').value;
       const caption = document.getElementById('communityCaption').value.trim();
@@ -2907,7 +3270,8 @@
       const pets = getPets();
       const active = pets[getActivePetIdx()] || pets[0] || null;
       const posts = getCommunityPosts();
-      posts.unshift({ id: Date.now(), type, caption, image: selectedCommunityImage, author: user.name || 'Pet Parent', petName: active ? active.name : 'Pet', petAvatar: active ? active.avatar : '', petIcon: active ? (PET_ICONS[active.type] || '🐾') : '🐾', likes: 0, date: new Date().toISOString() });
+      const newPost = { id: Date.now(), type, caption, image: selectedCommunityImage, author: user.name || 'Pet Parent', petName: active ? active.name : 'Pet', petAvatar: active ? active.avatar : '', petIcon: active ? (PET_ICONS[active.type] || '🐾') : '🐾', likes: 0, date: new Date().toISOString() };
+      posts.unshift(newPost);
       saveCommunityPosts(posts.slice(0, 60));
       selectedCommunityImage = '';
       document.getElementById('communityCaption').value = '';
@@ -2916,16 +3280,12 @@
       showToast('Posted to community 👥');
       renderCommunity();
     }
-    function likeCommunityPost(id) {
-      const posts = getCommunityPosts();
-      const p = posts.find(x => x.id === id);
-      if (p) p.likes = (p.likes || 0) + 1;
-      saveCommunityPosts(posts); renderCommunity();
-    }
+
     function deleteCommunityPost(id) {
       saveCommunityPosts(getCommunityPosts().filter(p => p.id !== id));
       renderCommunity(); showToast('Post removed');
     }
+
     function seedCommunityDemo() {
       const posts = getCommunityPosts();
       posts.unshift(
@@ -2934,22 +3294,406 @@
       );
       saveCommunityPosts(posts.slice(0, 60)); renderCommunity(); showToast('Demo community posts added');
     }
+
+    function switchFeedTab(tab) {
+      activeFeedTab = tab;
+      document.querySelectorAll('#communityTab .combo-sub-tab').forEach(el => el.classList.remove('active'));
+      const activeEl = document.getElementById('feedTab-' + tab);
+      if (activeEl) activeEl.classList.add('active');
+      renderCommunity();
+    }
+
+    async function toggleReaction(postId, emoji) {
+      if (!window.supabaseClient || !currentUser) {
+        showToast('Please login to react to posts');
+        return;
+      }
+      const userId = currentUser.id;
+      
+      // Optimistic update local cache
+      if (!pawCache.reactions) pawCache.reactions = [];
+      const existingIdx = pawCache.reactions.findIndex(r => r.post_id === postId && r.user_id === userId && r.emoji === emoji);
+      
+      if (existingIdx >= 0) {
+        // Remove reaction
+        const deletedReaction = pawCache.reactions.splice(existingIdx, 1)[0];
+        renderCommunity();
+        
+        try {
+          await window.supabaseClient.from('reactions')
+            .delete()
+            .eq('post_id', postId)
+            .eq('user_id', userId)
+            .eq('emoji', emoji);
+        } catch (err) {
+          console.error("Error removing reaction:", err);
+          pawCache.reactions.push(deletedReaction);
+          renderCommunity();
+        }
+      } else {
+        // Add reaction
+        const newReaction = { post_id: postId, user_id: userId, emoji: emoji };
+        pawCache.reactions.push(newReaction);
+        renderCommunity();
+        
+        try {
+          await window.supabaseClient.from('reactions').insert({
+            post_id: postId,
+            user_id: userId,
+            emoji: emoji
+          });
+        } catch (err) {
+          console.error("Error adding reaction:", err);
+          const rollIdx = pawCache.reactions.findIndex(r => r.post_id === postId && r.user_id === userId && r.emoji === emoji);
+          if (rollIdx >= 0) pawCache.reactions.splice(rollIdx, 1);
+          renderCommunity();
+        }
+      }
+    }
+
+    function toggleComments(postId) {
+      if (activeCommentsPostId === postId) {
+        activeCommentsPostId = null;
+      } else {
+        activeCommentsPostId = postId;
+        replyParentId = null;
+      }
+      renderCommunity();
+    }
+
+    async function postComment(postId) {
+      const input = document.getElementById(`commentInput-${postId}`);
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) return;
+      
+      if (!window.supabaseClient || !currentUser) {
+        showToast('Please login to comment');
+        return;
+      }
+      const userId = currentUser.id;
+      const userName = currentUser.user_metadata?.display_name || currentUser.email?.split('@')[0] || 'Pet Parent';
+      
+      try {
+        const payload = {
+          post_id: postId,
+          user_id: userId,
+          user_name: userName,
+          text: text,
+          parent_id: replyParentId
+        };
+        
+        const { data, error } = await window.supabaseClient.from('comments').insert(payload).select('*').single();
+        if (error) throw error;
+        
+        if (!pawCache.comments) pawCache.comments = [];
+        pawCache.comments.push(data);
+        
+        input.value = '';
+        replyParentId = null;
+        renderCommunity();
+        showToast('Comment posted! 💬');
+      } catch (err) {
+        console.error("Error posting comment:", err);
+        showToast('Failed to post comment');
+      }
+    }
+
+    function setCommentReply(parentId, userName, postId) {
+      replyParentId = parentId;
+      const input = document.getElementById(`commentInput-${postId}`);
+      if (input) {
+        input.placeholder = `Replying to @${userName}...`;
+        input.focus();
+      }
+    }
+
+    async function toggleFollow(followingId) {
+      if (!window.supabaseClient || !currentUser) {
+        showToast('Please login to follow users');
+        return;
+      }
+      const userId = currentUser.id;
+      if (userId === followingId) {
+        showToast('You cannot follow yourself');
+        return;
+      }
+      
+      if (!pawCache.follows) pawCache.follows = [];
+      const existingIdx = pawCache.follows.findIndex(f => f.follower_id === userId && f.following_id === followingId);
+      
+      if (existingIdx >= 0) {
+        // Unfollow
+        const deletedFollow = pawCache.follows.splice(existingIdx, 1)[0];
+        renderCommunity();
+        showToast('Unfollowed user');
+        
+        try {
+          await window.supabaseClient.from('follows')
+            .delete()
+            .eq('follower_id', userId)
+            .eq('following_id', followingId);
+        } catch (err) {
+          console.error("Error unfollowing:", err);
+          pawCache.follows.push(deletedFollow);
+          renderCommunity();
+        }
+      } else {
+        // Follow
+        const newFollow = { follower_id: userId, following_id: followingId };
+        pawCache.follows.push(newFollow);
+        renderCommunity();
+        showToast('Following user! 👥');
+        
+        try {
+          await window.supabaseClient.from('follows').insert({
+            follower_id: userId,
+            following_id: followingId
+          });
+        } catch (err) {
+          console.error("Error following:", err);
+          const rollIdx = pawCache.follows.findIndex(f => f.follower_id === userId && f.following_id === followingId);
+          if (rollIdx >= 0) pawCache.follows.splice(rollIdx, 1);
+          renderCommunity();
+        }
+      }
+    }
+
+    async function openPublicProfile(ownerId, petName) {
+      if (!window.supabaseClient) return;
+      
+      const modal = document.getElementById('publicPetProfileScreen');
+      const box = document.getElementById('publicProfileContent');
+      if (!modal || !box) return;
+      
+      box.innerHTML = `<div class="empty-state" style="padding:40px 0;"><div class="loading-logo" style="margin:auto;font-size:32px;animation:spin 1s linear infinite">🐾</div><p style="margin-top:16px;">Loading profile...</p></div>`;
+      modal.classList.remove('hidden');
+      
+      try {
+        const { data: pets, error: petsErr } = await window.supabaseClient
+          .from('pets')
+          .select('*')
+          .eq('user_id', ownerId)
+          .eq('is_public', true);
+          
+        const { data: profile, error: profileErr } = await window.supabaseClient
+          .from('user_profiles')
+          .select('*')
+          .eq('id', ownerId)
+          .maybeSingle();
+          
+        const { data: posts, error: postsErr } = await window.supabaseClient
+          .from('community_posts')
+          .select('*')
+          .eq('user_id', ownerId);
+
+        if (petsErr || !pets || pets.length === 0) {
+          box.innerHTML = `<div class="empty-state" style="padding:20px;"><p>This user has no public pet profiles available.</p></div>`;
+          return;
+        }
+        
+        const pet = pets[0];
+        const follows = pawCache.follows || [];
+        const isFollowing = follows.some(f => f.follower_id === currentUser?.id && f.following_id === ownerId);
+        
+        let postsHTML = '';
+        if (posts && posts.length > 0) {
+          postsHTML = posts.map(p => `
+            <div style="background:var(--card-2);border-radius:12px;padding:12px;margin-top:8px;border:1px solid var(--border)">
+              <p style="font-size:13px;line-height:1.4;margin:0">${escapeHtml(p.content || '')}</p>
+              ${p.image_url ? `<img src="${p.image_url}" style="width:100%;border-radius:8px;margin-top:8px;max-height:150px;object-fit:cover;">` : ''}
+              <div style="font-size:11px;color:var(--muted);margin-top:6px;">${new Date(p.created_at).toLocaleDateString()}</div>
+            </div>
+          `).join('');
+        } else {
+          postsHTML = `<p style="font-size:13px;color:var(--muted);font-style:italic">No recent posts</p>`;
+        }
+        
+        const activePetIdx = getActivePetIdx();
+        const activePet = getPets()[activePetIdx];
+        const healthScore = activePet ? calculateHealthScore() : 80;
+
+        box.innerHTML = `
+          <div style="text-align:center;padding:12px 0;">
+            <div class="feed-avatar" style="width:80px;height:80px;font-size:40px;margin:0 auto 12px;background:var(--pill-bg);color:var(--orange)">
+              ${pet.avatar ? `<img src="${pet.avatar}" alt="pet" style="border-radius:50%">` : '🐾'}
+            </div>
+            <h2 style="font-weight:900;margin:0">${escapeHtml(pet.name)}</h2>
+            <p style="font-size:14px;color:var(--muted);margin:4px 0 12px;">${escapeHtml(pet.breed || pet.species)} · ${pet.age} yrs · ${pet.weight} kg</p>
+            
+            <div style="display:flex;justify-content:center;gap:12px;margin-bottom:16px;">
+              <div style="background:var(--pill-bg);padding:8px 14px;border-radius:12px;font-size:12px;font-weight:800;color:var(--pill-color)">
+                🔥 7+ Days Streak
+              </div>
+              <div style="background:var(--success-bg);padding:8px 14px;border-radius:12px;font-size:12px;font-weight:800;color:var(--teal)">
+                Health Score: ${healthScore}
+              </div>
+            </div>
+
+            ${currentUser?.id !== ownerId ? `
+              <button class="primary-btn" onclick="toggleFollow('${ownerId}'); closePublicProfile(); openPublicProfile('${ownerId}','${petName}');" style="margin-top:4px;width:100%;max-width:200px;">
+                ${isFollowing ? '👤 Unfollow Owner' : '➕ Follow Owner'}
+              </button>
+            ` : '<p style="font-size:12px;color:var(--muted);font-style:italic">Your Public Profile</p>'}
+          </div>
+          
+          <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+          <h4 style="font-weight:900;color:var(--dark);margin-bottom:8px">Post History</h4>
+          <div style="max-height:220px;overflow-y:auto;padding-right:4px;">
+            ${postsHTML}
+          </div>
+        `;
+      } catch (err) {
+        console.error("Error loading public profile:", err);
+        box.innerHTML = `<div class="empty-state" style="padding:20px;"><p>Failed to load profile. Please try again.</p></div>`;
+      }
+    }
+
+    function closePublicProfile() {
+      const modal = document.getElementById('publicPetProfileScreen');
+      if (modal) modal.classList.add('hidden');
+    }
+
     function renderCommunity() {
       const box = document.getElementById('communityFeedBox'); if (!box) return;
-      const posts = getCommunityPosts();
-      if (!posts.length) { box.innerHTML = `<div class="card empty-state"><h3>No community posts yet</h3><p>Share your first pet photo, recipe, or care tip.</p></div>`; return; }
-      box.innerHTML = posts.map(p => `
-    <div class="feed-card">
-      <div class="feed-head">
-        <div class="feed-avatar">${p.petAvatar ? `<img src="${p.petAvatar}" alt="pet">` : (p.petIcon || '🐾')}</div>
-        <div><b>${p.author}</b><div style="font-size:12px;color:var(--muted)">${p.petName || 'Pet'} · ${new Date(p.date).toLocaleString()}</div></div>
-      </div>
-      <span class="recipe-chip">${p.type === 'recipe' ? '🍲 Community Recipe' : p.type === 'photo' ? '📷 Pet Photo' : '💡 Care Tip'}</span>
-      <p style="font-size:14px;line-height:1.5;margin-top:8px">${escapeHtml(p.caption || '')}</p>
-      ${p.image ? `<img class="feed-img" src="${p.image}" alt="community photo">` : ''}
-      <div style="display:flex;gap:8px;margin-top:8px"><button class="small-btn" onclick="likeCommunityPost(${p.id})">❤️ ${p.likes || 0}</button><button class="small-btn" onclick="deleteCommunityPost(${p.id})">Delete</button></div>
-    </div>`).join('');
+      let posts = getCommunityPosts();
+      const myUserId = currentUser?.id;
+      
+      // Filter following feed if selected
+      if (activeFeedTab === 'following' && myUserId) {
+        const follows = pawCache.follows || [];
+        const followingUserIds = follows.filter(f => f.follower_id === myUserId).map(f => f.following_id);
+        posts = posts.filter(p => followingUserIds.includes(p.user_id) || p.user_id === myUserId);
+      }
+
+      if (!posts.length) {
+        box.innerHTML = `<div class="card empty-state"><h3>No community posts yet</h3><p>Share your first pet photo, recipe, or care tip.</p></div>`;
+        return;
+      }
+
+      const follows = pawCache.follows || [];
+      const followingUserIds = follows.filter(f => f.follower_id === myUserId).map(f => f.following_id);
+
+      box.innerHTML = posts.map(p => {
+        const isOwnPost = p.user_id === myUserId;
+        const isFollowing = followingUserIds.includes(p.user_id);
+        
+        // Count reactions
+        const postReactions = (pawCache.reactions || []).filter(r => r.post_id === p.id);
+        const emojis = ['❤️', '🐾', '😂', '😮'];
+        const reactionsHTML = emojis.map(emo => {
+          const count = postReactions.filter(r => r.emoji === emo).length;
+          const userReacted = postReactions.some(r => r.emoji === emo && r.user_id === myUserId);
+          return `
+            <button class="small-btn ${userReacted ? 'active-reaction' : ''}" 
+              style="padding:6px 10px;font-size:12px;${userReacted ? 'border:1.5px solid var(--orange);background:var(--pill-bg);color:var(--orange)' : ''}" 
+              onclick="toggleReaction(${p.id}, '${emo}')">
+              ${emo} ${count}
+            </button>
+          `;
+        }).join('');
+
+        // Get comments count
+        const postComments = (pawCache.comments || []).filter(c => c.post_id === p.id);
+        const isCommentsExpanded = activeCommentsPostId === p.id;
+        
+        let commentsSectionHTML = '';
+        if (isCommentsExpanded) {
+          // Render comments list
+          const topLevel = postComments.filter(c => !c.parent_id);
+          const replies = postComments.filter(c => c.parent_id);
+          
+          let listHTML = '';
+          if (topLevel.length === 0) {
+            listHTML = `<p style="font-size:12px;color:var(--muted);font-style:italic;padding:8px 0;">No comments yet. Be the first!</p>`;
+          } else {
+            listHTML = topLevel.map(c => {
+              const commentReplies = replies.filter(r => r.parent_id === c.id);
+              const repliesHTML = commentReplies.map(r => `
+                <div style="margin-left:24px;background:var(--card-2);padding:8px 12px;border-radius:12px;margin-top:6px;border:1px solid var(--border)">
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <b style="font-size:12px;color:var(--dark)">@${escapeHtml(r.user_name)}</b>
+                    <span style="font-size:10px;color:var(--muted)">${new Date(r.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <p style="font-size:12px;margin-top:2px;line-height:1.4">${escapeHtml(r.text)}</p>
+                </div>
+              `).join('');
+              
+              return `
+                <div style="border-bottom:1px solid var(--border);padding:8px 0;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <b style="font-size:13px;color:var(--dark)">@${escapeHtml(c.user_name)}</b>
+                    <span style="font-size:11px;color:var(--muted)">${new Date(c.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <p style="font-size:13px;margin-top:2px;line-height:1.4">${escapeHtml(c.text)}</p>
+                  <div style="margin-top:4px;">
+                    <span onclick="setCommentReply(${c.id}, '${escapeHtml(c.user_name)}', ${p.id})" style="font-size:11px;color:var(--orange);cursor:pointer;font-weight:700;">Reply</span>
+                  </div>
+                  ${repliesHTML}
+                </div>
+              `;
+            }).join('');
+          }
+          
+          commentsSectionHTML = `
+            <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+              <h4 style="font-weight:900;margin:0 0 8px">Comments (${postComments.length})</h4>
+              <div style="max-height:200px;overflow-y:auto;padding-right:4px;">
+                ${listHTML}
+              </div>
+              <div style="display:flex;gap:8px;margin-top:10px">
+                <input type="text" id="commentInput-${p.id}" placeholder="Write a comment..." 
+                  style="flex:1;border-radius:12px;padding:8px 12px;border:1px solid var(--border);background:var(--card-2);color:var(--text);font-size:13px;" />
+                <button class="small-btn" onclick="postComment(${p.id})" style="padding:8px 14px;">Post</button>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+        <div class="feed-card card">
+          <div class="feed-head" style="display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;gap:10px;align-items:center" onclick="openPublicProfile('${p.user_id}', '${p.petName || 'Pet'}')">
+              <div class="feed-avatar" style="width:40px;height:40px;font-size:20px;background:var(--pill-bg);color:var(--orange);display:flex;align-items:center;justify-content:center;cursor:pointer">
+                ${p.petAvatar ? `<img src="${p.petAvatar}" alt="pet" style="border-radius:50%">` : (p.petIcon || '🐾')}
+              </div>
+              <div style="cursor:pointer">
+                <b>${escapeHtml(p.author)}</b>
+                <div style="font-size:11px;color:var(--muted)">${p.petName || 'Pet'} · ${new Date(p.date).toLocaleString()}</div>
+              </div>
+            </div>
+            
+            ${!isOwnPost && myUserId ? `
+              <button class="small-btn" onclick="toggleFollow('${p.user_id}')" style="padding:6px 12px;font-size:11px;">
+                ${isFollowing ? '👤 Following' : '➕ Follow'}
+              </button>
+            ` : ''}
+          </div>
+          
+          <span class="recipe-chip" style="margin-top:8px">${p.type === 'recipe' ? '🍲 Community Recipe' : p.type === 'photo' ? '📷 Pet Photo' : '💡 Care Tip'}</span>
+          <p style="font-size:14px;line-height:1.5;margin-top:8px">${escapeHtml(p.caption || '')}</p>
+          ${p.image ? `<img class="feed-img" src="${p.image}" alt="community photo" style="width:100%;border-radius:16px;margin-top:8px;max-height:300px;object-fit:cover">` : ''}
+          
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;gap:6px;">
+              ${reactionsHTML}
+            </div>
+            <button class="small-btn" onclick="toggleComments(${p.id})" style="padding:6px 12px;font-size:12px;">
+              💬 ${postComments.length} Comments
+            </button>
+          </div>
+          
+          ${commentsSectionHTML}
+          
+          ${isOwnPost ? `
+            <div style="margin-top:8px;text-align:right">
+              <span onclick="deleteCommunityPost(${p.id})" style="font-size:12px;color:#EF5350;cursor:pointer;font-weight:700">Delete Post</span>
+            </div>
+          ` : ''}
+        </div>`;
+      }).join('');
     }
+
 
     // ==================== MARKETPLACE FEATURES ====================
     function renderMarketplace() {
